@@ -1,0 +1,491 @@
+// Service Worker للنسخة المخصصة للمستخدمين - محلات الحجامي
+const CACHE_NAME = 'alhajami-user-app-v2.0';
+const urlsToCache = [
+  './',
+  './index.html',
+  './manifest.json',
+  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css',
+  'https://fonts.googleapis.com/css2?family=Tajawal:wght@200;300;400;500;700;800;900&display=swap',
+  'https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js',
+  'https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js',
+  'https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js',
+  'https://firebasestorage.googleapis.com/v0/b/messageemeapp.appspot.com/o/alhijama%2F472208534_122180270408092809_6379164161521111948_n.jpg?alt=media&token=c2381395-7d6c-460c-a197-1a42d05b42c1'
+];
+
+// تثبيت Service Worker
+self.addEventListener('install', (event) => {
+  console.log('🔧 Service Worker: تم التثبيت للنسخة الخاصة بالمستخدمين');
+  
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        console.log('📦 Service Worker: تم فتح الكاش للمستخدمين');
+        return cache.addAll(urlsToCache);
+      })
+      .catch((error) => {
+        console.error('❌ Service Worker: خطأ في التثبيت:', error);
+      })
+  );
+  
+  // فرض التفعيل الفوري
+  self.skipWaiting();
+});
+
+// تفعيل Service Worker
+self.addEventListener('activate', (event) => {
+  console.log('✅ Service Worker: تم التفعيل للنسخة الخاصة بالمستخدمين');
+  
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          // حذف الكاش القديم
+          if (cacheName !== CACHE_NAME && cacheName.includes('alhajami')) {
+            console.log('🗑️ Service Worker: حذف الكاش القديم:', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    }).then(() => {
+      // التحكم في جميع العملاء
+      return self.clients.claim();
+    })
+  );
+});
+
+// اعتراض الطلبات مع تحسينات للمستخدمين
+self.addEventListener('fetch', (event) => {
+  // تجاهل طلبات غير HTTP/HTTPS
+  if (!event.request.url.startsWith('http')) {
+    return;
+  }
+  
+  // تجاهل طلبات Firebase الديناميكية
+  if (event.request.url.includes('firebaseapp.com') && 
+      (event.request.url.includes('__/auth/') || 
+       event.request.url.includes('__/firebase/') ||
+       event.request.method !== 'GET')) {
+    return fetch(event.request);
+  }
+  
+  // استراتيجية خاصة للمنتجات والإعلانات
+  if (event.request.url.includes('/products') || 
+      event.request.url.includes('/ads') ||
+      event.request.url.includes('/popupAds')) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          // حفظ نسخة في الكاش
+          if (response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME)
+              .then(cache => cache.put(event.request, responseClone));
+          }
+          return response;
+        })
+        .catch(() => {
+          // إرجاع من الكاش عند فشل الشبكة
+          return caches.match(event.request);
+        })
+    );
+    return;
+  }
+  
+  event.respondWith(
+    caches.match(event.request)
+      .then((response) => {
+        // إرجاع من الكاش إذا وُجد
+        if (response) {
+          console.log('💾 Service Worker: من الكاش:', event.request.url);
+          return response;
+        }
+        
+        // محاولة جلب من الشبكة
+        return fetch(event.request)
+          .then((response) => {
+            // التحقق من صحة الاستجابة
+            if (!response || response.status !== 200 || response.type !== 'basic') {
+              return response;
+            }
+            
+            // نسخ الاستجابة للكاش
+            const responseToCache = response.clone();
+            
+            // حفظ في الكاش للموارد المهمة فقط
+            if (shouldCache(event.request.url)) {
+              caches.open(CACHE_NAME)
+                .then((cache) => {
+                  cache.put(event.request, responseToCache);
+                });
+            }
+            
+            return response;
+          })
+          .catch((error) => {
+            console.log('🌐 Service Worker: خطأ في الشبكة:', error);
+            
+            // إرجاع صفحة بديلة عند عدم الاتصال
+            if (event.request.destination === 'document') {
+              return caches.match('./');
+            }
+            
+            // إرجاع صورة بديلة للصور
+            if (event.request.destination === 'image') {
+              return new Response(
+                '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">' +
+                '<rect width="400" height="300" fill="#1E293B"/>' +
+                '<circle cx="200" cy="120" r="40" fill="#8B5CF6" opacity="0.3"/>' +
+                '<text x="200" y="180" text-anchor="middle" font-family="Tajawal, Arial" font-size="16" fill="#94A3B8">محلات الحجامي</text>' +
+                '<text x="200" y="200" text-anchor="middle" font-family="Tajawal, Arial" font-size="12" fill="#64748B">غير متصل</text>' +
+                '</svg>',
+                { 
+                  headers: { 
+                    'Content-Type': 'image/svg+xml',
+                    'Cache-Control': 'max-age=86400'
+                  } 
+                }
+              );
+            }
+            
+            throw error;
+          });
+      })
+  );
+});
+
+// تحديد الملفات التي يجب حفظها في الكاش
+function shouldCache(url) {
+  // حفظ الصور من Firebase Storage
+  if (url.includes('firebasestorage.googleapis.com')) {
+    return true;
+  }
+  
+  // حفظ ملفات CSS و JS
+  if (url.includes('.css') || url.includes('.js')) {
+    return true;
+  }
+  
+  // حفظ الخطوط
+  if (url.includes('fonts.googleapis.com') || url.includes('fonts.gstatic.com')) {
+    return true;
+  }
+  
+  // حفظ أيقونات Font Awesome
+  if (url.includes('font-awesome') || url.includes('cdnjs.cloudflare.com')) {
+    return true;
+  }
+  
+  return false;
+}
+
+// رسائل إلى العميل
+self.addEventListener('message', (event) => {
+  console.log('📨 Service Worker: رسالة من العميل:', event.data);
+  
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+  
+  if (event.data && event.data.type === 'GET_VERSION') {
+    event.ports[0].postMessage({ 
+      version: CACHE_NAME,
+      userApp: true,
+      features: ['shopping', 'favorites', 'social_media']
+    });
+  }
+  
+  if (event.data && event.data.type === 'CLEAR_CACHE') {
+    event.waitUntil(
+      caches.delete(CACHE_NAME).then(() => {
+        event.ports[0].postMessage({ cleared: true });
+      })
+    );
+  }
+});
+
+// معالجة الإشعارات Push للمستخدمين
+self.addEventListener('push', (event) => {
+  console.log('🔔 Service Worker: إشعار Push للمستخدمين');
+  
+  let notificationData = {
+    title: 'محلات الحجامي',
+    body: 'عروض جديدة ومنتجات رائعة في انتظارك!',
+    icon: 'https://firebasestorage.googleapis.com/v0/b/messageemeapp.appspot.com/o/alhijama%2F472208534_122180270408092809_6379164161521111948_n.jpg?alt=media&token=c2381395-7d6c-460c-a197-1a42d05b42c1',
+    badge: 'https://firebasestorage.googleapis.com/v0/b/messageemeapp.appspot.com/o/alhijama%2F472208534_122180270408092809_6379164161521111948_n.jpg?alt=media&token=c2381395-7d6c-460c-a197-1a42d05b42c1',
+    data: {
+      url: './',
+      timestamp: Date.now()
+    },
+    actions: [
+      {
+        action: 'view_products',
+        title: '🛍️ تصفح المنتجات'
+      },
+      {
+        action: 'view_offers',
+        title: '🏷️ عرض العروض'
+      },
+      {
+        action: 'open_social',
+        title: '📱 متابعة على السوشال'
+      }
+    ],
+    tag: 'alhajami-user-notification',
+    renotify: true,
+    vibrate: [200, 100, 200],
+    requireInteraction: false
+  };
+  
+  if (event.data) {
+    try {
+      const pushData = event.data.json();
+      notificationData = { ...notificationData, ...pushData };
+    } catch (e) {
+      notificationData.body = event.data.text() || notificationData.body;
+    }
+  }
+  
+  event.waitUntil(
+    self.registration.showNotification(notificationData.title, notificationData)
+  );
+});
+
+// معالجة النقر على الإشعارات للمستخدمين
+self.addEventListener('notificationclick', (event) => {
+  console.log('👆 Service Worker: نقر على الإشعار - المستخدمين');
+  
+  event.notification.close();
+  
+  let targetUrl = './';
+  
+  if (event.action === 'view_products') {
+    targetUrl = './?category=all';
+  } else if (event.action === 'view_offers') {
+    targetUrl = './?category=offers';
+  } else if (event.action === 'open_social') {
+    // فتح الصفحات الاجتماعية
+    event.waitUntil(
+      Promise.all([
+        clients.openWindow('https://www.facebook.com/share/1EwLZcL21p/'),
+        clients.openWindow('https://www.instagram.com/a__1257a?igsh=eDN3dHlmcTA1MGxt')
+      ])
+    );
+    return;
+  } else if (event.notification.data && event.notification.data.url) {
+    targetUrl = event.notification.data.url;
+  }
+  
+  event.waitUntil(
+    clients.matchAll({
+      type: 'window',
+      includeUncontrolled: true
+    }).then(clientList => {
+      // البحث عن نافذة مفتوحة للتطبيق
+      for (let client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          client.focus();
+          client.navigate(targetUrl);
+          return;
+        }
+      }
+      
+      // فتح نافذة جديدة إذا لم توجد
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
+});
+
+// معالجة تزامن البيانات في الخلفية للمستخدمين
+self.addEventListener('sync', (event) => {
+  console.log('🔄 Service Worker: مزامنة البيانات - المستخدمين:', event.tag);
+  
+  if (event.tag === 'background-sync-user') {
+    event.waitUntil(doUserBackgroundSync());
+  } else if (event.tag === 'sync-favorites') {
+    event.waitUntil(syncUserFavorites());
+  } else if (event.tag === 'sync-cart') {
+    event.waitUntil(syncUserCart());
+  }
+});
+
+// دالة مزامنة البيانات للمستخدمين
+async function doUserBackgroundSync() {
+  try {
+    console.log('🔄 Service Worker: بدء مزامنة بيانات المستخدمين');
+    
+    // مزامنة المفضلة
+    await syncUserFavorites();
+    
+    // مزامنة السلة
+    await syncUserCart();
+    
+    // تحديث المنتجات
+    await updateProductsCache();
+    
+    // تحديث الإعلانات
+    await updateAdsCache();
+    
+    console.log('✅ Service Worker: تمت مزامنة بيانات المستخدمين');
+    return Promise.resolve();
+  } catch (error) {
+    console.error('❌ Service Worker: خطأ في مزامنة بيانات المستخدمين:', error);
+    throw error;
+  }
+}
+
+// مزامنة المفضلة
+async function syncUserFavorites() {
+  try {
+    // يمكن إضافة منطق مزامنة المفضلة مع الخادم هنا
+    console.log('❤️ Service Worker: مزامنة المفضلة');
+    return Promise.resolve();
+  } catch (error) {
+    console.error('❌ Service Worker: خطأ في مزامنة المفضلة:', error);
+    throw error;
+  }
+}
+
+// مزامنة السلة
+async function syncUserCart() {
+  try {
+    // يمكن إضافة منطق مزامنة السلة مع الخادم هنا
+    console.log('🛒 Service Worker: مزامنة السلة');
+    return Promise.resolve();
+  } catch (error) {
+    console.error('❌ Service Worker: خطأ في مزامنة السلة:', error);
+    throw error;
+  }
+}
+
+// تحديث كاش المنتجات
+async function updateProductsCache() {
+  try {
+    const cache = await caches.open(CACHE_NAME);
+    
+    // محاولة تحديث بيانات المنتجات
+    const productsUrl = 'https://messageemeapp-default-rtdb.firebaseio.com/products.json';
+    try {
+      const response = await fetch(productsUrl);
+      if (response.ok) {
+        await cache.put(productsUrl, response);
+        console.log('📦 Service Worker: تم تحديث كاش المنتجات');
+      }
+    } catch (error) {
+      console.warn('⚠️ Service Worker: لم يتم تحديث كاش المنتجات:', error.message);
+    }
+    
+    return Promise.resolve();
+  } catch (error) {
+    console.error('❌ Service Worker: خطأ في تحديث كاش المنتجات:', error);
+    throw error;
+  }
+}
+
+// تحديث كاش الإعلانات
+async function updateAdsCache() {
+  try {
+    const cache = await caches.open(CACHE_NAME);
+    
+    // تحديث الإعلانات العادية
+    const adsUrl = 'https://messageemeapp-default-rtdb.firebaseio.com/ads.json';
+    try {
+      const response = await fetch(adsUrl);
+      if (response.ok) {
+        await cache.put(adsUrl, response);
+        console.log('📢 Service Worker: تم تحديث كاش الإعلانات');
+      }
+    } catch (error) {
+      console.warn('⚠️ Service Worker: لم يتم تحديث كاش الإعلانات:', error.message);
+    }
+    
+    // تحديث الإعلانات المنبثقة
+    const popupAdsUrl = 'https://messageemeapp-default-rtdb.firebaseio.com/popupAds.json';
+    try {
+      const response = await fetch(popupAdsUrl);
+      if (response.ok) {
+        await cache.put(popupAdsUrl, response);
+        console.log('🎯 Service Worker: تم تحديث كاش الإعلانات المنبثقة');
+      }
+    } catch (error) {
+      console.warn('⚠️ Service Worker: لم يتم تحديث كاش الإعلانات المنبثقة:', error.message);
+    }
+    
+    return Promise.resolve();
+  } catch (error) {
+    console.error('❌ Service Worker: خطأ في تحديث كاش الإعلانات:', error);
+    throw error;
+  }
+}
+
+// معالجة تحديثات الكاش الدورية للمستخدمين
+self.addEventListener('periodicsync', (event) => {
+  if (event.tag === 'update-user-cache') {
+    event.waitUntil(updateUserCache());
+  }
+});
+
+// تحديث الكاش دورياً للمستخدمين
+async function updateUserCache() {
+  try {
+    console.log('🔄 Service Worker: بدء التحديث الدوري للمستخدمين');
+    
+    const cache = await caches.open(CACHE_NAME);
+    const requests = await cache.keys();
+    
+    // تحديث الملفات المهمة فقط
+    const importantUrls = requests.filter(request => 
+      shouldCache(request.url) || 
+      request.url.includes('/products') ||
+      request.url.includes('/ads') ||
+      request.url.includes('/popupAds')
+    );
+    
+    const updatePromises = importantUrls.map(async (request) => {
+      try {
+        const response = await fetch(request);
+        if (response.status === 200) {
+          await cache.put(request, response);
+          console.log('✅ Service Worker: تم تحديث:', request.url);
+        }
+      } catch (error) {
+        console.warn('⚠️ Service Worker: خطأ في تحديث:', request.url, error.message);
+      }
+    });
+    
+    await Promise.all(updatePromises);
+    console.log('✅ Service Worker: تم التحديث الدوري للمستخدمين');
+  } catch (error) {
+    console.error('❌ Service Worker: خطأ في التحديث الدوري:', error);
+  }
+}
+
+// إحصائيات استخدام التطبيق
+self.addEventListener('fetch', (event) => {
+  // تتبع استخدام التطبيق (بدون معلومات شخصية)
+  if (event.request.url.includes(self.location.origin)) {
+    logAppUsage(event.request.url);
+  }
+});
+
+function logAppUsage(url) {
+  // إحصائيات بسيطة لتحسين التطبيق
+  try {
+    const usage = {
+      timestamp: Date.now(),
+      page: url.split('/').pop() || 'home',
+      userAgent: 'PWA-User'
+    };
+    
+    // يمكن إرسال الإحصائيات لتحليل الاستخدام (مع احترام الخصوصية)
+    console.log('📊 Service Worker: استخدام التطبيق:', usage.page);
+  } catch (error) {
+    // تجاهل أخطاء الإحصائيات
+  }
+}
+
+console.log('🚀 Service Worker محلات الحجامي - نسخة المستخدمين جاهز للعمل!');
+console.log('🛍️ الميزات المتاحة: التسوق، المفضلة، السلة، الروابط الاجتماعية');
+console.log('📱 المنصات الاجتماعية: فيسبوك، إنستغرام');
+console.log('🔔 الإشعارات: مفعلة للعروض والمنتجات الجديدة');
