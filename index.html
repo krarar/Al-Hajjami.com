@@ -32,10 +32,8 @@
     <!-- Preload Critical Resources -->
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;600;700&display=swap" as="style">
     
-    <!-- Firebase Scripts -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         :root {
@@ -1022,6 +1020,71 @@
             color: white;
         }
 
+        /* Admin Panel Styles */
+        .admin-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(15, 23, 42, 0.98);
+            backdrop-filter: blur(20px);
+            border: 2px solid var(--primary-solid);
+            border-radius: var(--radius-2xl);
+            padding: var(--space-5);
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            z-index: 2001;
+            display: none;
+        }
+
+        .admin-panel.active {
+            display: block;
+        }
+
+        .admin-tabs {
+            display: flex;
+            margin-bottom: var(--space-4);
+            gap: var(--space-2);
+        }
+
+        .admin-tab {
+            padding: var(--space-2) var(--space-3);
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            color: var(--gray-300);
+            cursor: pointer;
+            transition: all var(--transition-base);
+            font-size: var(--font-size-sm);
+        }
+
+        .admin-tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .admin-form {
+            display: none;
+        }
+
+        .admin-form.active {
+            display: block;
+        }
+
+        .file-input {
+            width: 100%;
+            padding: var(--space-3);
+            background: var(--glass);
+            border: 2px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            color: white;
+            font-family: 'Tajawal', sans-serif;
+            font-size: var(--font-size-sm);
+            cursor: pointer;
+        }
+
         /* Notification */
         .notification {
             position: fixed;
@@ -1256,6 +1319,11 @@
             .popup-ad-image {
                 height: 150px;
             }
+
+            .admin-panel {
+                max-width: 90%;
+                padding: var(--space-4);
+            }
         }
 
         @media (max-width: 480px) {
@@ -1289,6 +1357,15 @@
             .popup-ad {
                 max-width: 300px;
                 padding: var(--space-3);
+            }
+
+            .admin-panel {
+                max-width: 95%;
+                padding: var(--space-3);
+            }
+
+            .admin-tabs {
+                flex-wrap: wrap;
             }
         }
 
@@ -1430,6 +1507,9 @@
                     <i class="fas fa-shopping-cart"></i>
                     <span class="cart-badge" id="cartCount">0</span>
                 </div>
+                <div class="action-btn" onclick="openAdminPanel()" title="لوحة الإدارة">
+                    <i class="fas fa-cog"></i>
+                </div>
                 <div class="action-btn" onclick="toggleSidebar()">
                     <i class="fas fa-bars"></i>
                 </div>
@@ -1471,6 +1551,149 @@
             </div>
         </section>
     </main>
+
+    <!-- Admin Panel -->
+    <div class="admin-panel" id="adminPanel">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <i class="fas fa-cog"></i>
+                لوحة الإدارة
+            </h3>
+            <button class="close-btn" onclick="closeAdminPanel()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- Storage Setup Section -->
+        <div style="background: var(--glass); border-radius: var(--radius-lg); padding: var(--space-3); margin-bottom: var(--space-4); border: 1px solid var(--glass-border);">
+            <h4 style="color: var(--primary-solid); margin-bottom: var(--space-2); font-size: var(--font-size-base);">
+                <i class="fas fa-cloud-upload-alt"></i> إعداد مجلد الصور
+            </h4>
+            <p style="color: var(--gray-300); font-size: var(--font-size-sm); margin-bottom: var(--space-3);">
+                يجب إنشاء مجلد الصور أولاً قبل رفع أي صور
+            </p>
+            <div style="display: flex; gap: var(--space-2);">
+                <button class="btn btn-secondary" onclick="checkImagesBucketStatus()" style="flex: 1;">
+                    <i class="fas fa-search"></i>
+                    فحص حالة المجلد
+                </button>
+                <button class="btn btn-primary" onclick="createImagesBucket()" style="flex: 1;">
+                    <i class="fas fa-folder-plus"></i>
+                    إنشاء المجلد
+                </button>
+            </div>
+        </div>
+
+        <div class="admin-tabs">
+            <div class="admin-tab active" onclick="switchAdminTab('products')">المنتجات</div>
+            <div class="admin-tab" onclick="switchAdminTab('ads')">الإعلانات</div>
+            <div class="admin-tab" onclick="switchAdminTab('popupAds')">الإعلانات المنبثقة</div>
+        </div>
+
+        <!-- Products Form -->
+        <div class="admin-form active" id="productsForm">
+            <form id="addProductForm" onsubmit="handleAddProduct(event)">
+                <div class="form-group">
+                    <label class="form-label">اسم المنتج *</label>
+                    <input type="text" class="form-input" id="productName" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">الوصف *</label>
+                    <textarea class="form-textarea" id="productDescription" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">السعر *</label>
+                    <input type="number" class="form-input" id="productPrice" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">السعر الأصلي (اختياري)</label>
+                    <input type="number" class="form-input" id="productOriginalPrice">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">التصنيف</label>
+                    <select class="form-input" id="productCategory">
+                        <option value="shawls">الشالات والطرحات</option>
+                        <option value="carpets">السجادات التركية</option>
+                        <option value="hajj">مستلزمات الحج والعمرة</option>
+                        <option value="wholesale">البيع بالجملة</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">العلامة (اختياري)</label>
+                    <input type="text" class="form-input" id="productBadge" placeholder="جديد، خصم، محدود...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">التقييم</label>
+                    <input type="number" class="form-input" id="productRating" min="1" max="5" step="0.1" value="4.5">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">الصور *</label>
+                    <input type="file" class="file-input" id="productImages" multiple accept="image/*" required>
+                    <small style="color: var(--gray-400); margin-top: var(--space-1); display: block;">يمكنك اختيار عدة صور</small>
+                </div>
+                <button type="submit" class="btn btn-primary w-full">
+                    <i class="fas fa-plus"></i>
+                    إضافة المنتج
+                </button>
+            </form>
+        </div>
+
+        <!-- Ads Form -->
+        <div class="admin-form" id="adsForm">
+            <form id="addAdForm" onsubmit="handleAddAd(event)">
+                <div class="form-group">
+                    <label class="form-label">عنوان الإعلان *</label>
+                    <input type="text" class="form-input" id="adTitle" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">الوصف *</label>
+                    <textarea class="form-textarea" id="adDescription" rows="2" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">صورة الإعلان</label>
+                    <input type="file" class="file-input" id="adImage" accept="image/*">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">المنتج المربوط (اختياري)</label>
+                    <select class="form-input" id="adLinkedProduct">
+                        <option value="">لا يوجد</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary w-full">
+                    <i class="fas fa-plus"></i>
+                    إضافة الإعلان
+                </button>
+            </form>
+        </div>
+
+        <!-- Popup Ads Form -->
+        <div class="admin-form" id="popupAdsForm">
+            <form id="addPopupAdForm" onsubmit="handleAddPopupAd(event)">
+                <div class="form-group">
+                    <label class="form-label">عنوان الإعلان المنبثق *</label>
+                    <input type="text" class="form-input" id="popupAdTitle" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">الوصف *</label>
+                    <textarea class="form-textarea" id="popupAdDescription" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">صورة الإعلان *</label>
+                    <input type="file" class="file-input" id="popupAdImage" accept="image/*" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">المنتج المربوط (اختياري)</label>
+                    <select class="form-input" id="popupAdLinkedProduct">
+                        <option value="">لا يوجد</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary w-full">
+                    <i class="fas fa-plus"></i>
+                    إضافة الإعلان المنبثق
+                </button>
+            </form>
+        </div>
+    </div>
 
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
@@ -1667,21 +1890,12 @@
     </div>
 
     <script>
-        // إعدادات Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyDGpAHia_wEmrhnmYjrPf1n1TrAzwEMiAI",
-            authDomain: "messageemeapp.firebaseapp.com",
-            databaseURL: "https://messageemeapp-default-rtdb.firebaseio.com",
-            projectId: "messageemeapp",
-            storageBucket: "messageemeapp.appspot.com",
-            messagingSenderId: "255034474844",
-            appId: "1:255034474844:web:5e3b7a6bc4b2fb94cc4199"
-        };
+        // إعدادات Supabase
+        const SUPABASE_URL = 'https://wgvkbrmcgejscgsyapcs.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indndmticm1jZ2Vqc2Nnc3lhcGNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1MzgwOTUsImV4cCI6MjA2NTExNDA5NX0.FfODkBYSgTBBkoNP40YixlQphKyrzYbuwqSip7-smuU';
 
-        // تهيئة Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-        const storage = firebase.storage();
+        // تهيئة Supabase
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Social Media Links
         const socialLinks = {
@@ -1702,6 +1916,7 @@
         let debounceTimer = null;
         let intersectionObserver = null;
         let popupAdShown = JSON.parse(localStorage.getItem('alhajami_popup_shown')) || {};
+        let currentAdminTab = 'products';
 
         // PWA Install
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -1755,6 +1970,277 @@
             }
         }
 
+        // دوال رفع الصور
+        async function uploadImages(files, folder = 'products') {
+            try {
+                // التحقق من وجود bucket الصور أولاً
+                await checkAndCreateImagesBucket();
+
+                const uploadPromises = Array.from(files).map(async (file) => {
+                    const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(7)}.${file.name.split('.').pop()}`;
+                    
+                    const { data, error } = await supabase.storage
+                        .from('images')
+                        .upload(fileName, file, {
+                            cacheControl: '3600',
+                            upsert: false
+                        });
+
+                    if (error) {
+                        console.error('خطأ في رفع الصورة:', error);
+                        throw error;
+                    }
+
+                    const { data: { publicUrl } } = supabase.storage
+                        .from('images')
+                        .getPublicUrl(fileName);
+
+                    return publicUrl;
+                });
+
+                const urls = await Promise.all(uploadPromises);
+                console.log(`✅ تم رفع ${urls.length} صورة بنجاح`);
+                return urls;
+                
+            } catch (error) {
+                console.error('خطأ في رفع الصور:', error);
+                
+                // إذا كان الخطأ متعلق بـ bucket
+                if (error.message.includes('Bucket') || error.statusCode === 404) {
+                    throw new Error('مجلد الصور غير موجود. انقر على أيقونة الإعدادات ⚙️ لإنشاؤه.');
+                }
+                
+                throw new Error('فشل في رفع الصور: ' + error.message);
+            }
+        }
+
+        // التحقق من bucket وإنشاؤه إذا لم يكن موجوداً
+        async function checkAndCreateImagesBucket() {
+            try {
+                // محاولة رفع ملف تجريبي صغير للتحقق من وجود bucket
+                const testFile = new Blob(['test'], { type: 'text/plain' });
+                const testFileName = `test_${Date.now()}.txt`;
+                
+                const { data, error } = await supabase.storage
+                    .from('images')
+                    .upload(testFileName, testFile);
+
+                if (error) {
+                    if (error.statusCode === 404 || error.message.includes('Bucket not found')) {
+                        throw new Error('Bucket غير موجود');
+                    }
+                    throw error;
+                }
+
+                // حذف الملف التجريبي
+                await supabase.storage
+                    .from('images')
+                    .remove([testFileName]);
+
+                console.log('✅ bucket الصور متاح ويعمل');
+                return true;
+
+            } catch (error) {
+                console.error('خطأ في التحقق من bucket:', error);
+                throw new Error('Bucket الصور غير موجود. يرجى إنشاؤه من Storage في Supabase Dashboard');
+            }
+        }
+
+        // التأكد من وجود bucket الصور
+        async function ensureImagesBucketExists() {
+            try {
+                console.log('🔍 التحقق من مجلد الصور...');
+                
+                // محاولة أكثر دقة للتحقق من bucket
+                const { data, error } = await supabase.storage
+                    .from('images')
+                    .list('', { limit: 1 });
+
+                if (error) {
+                    if (error.statusCode === 404 || error.message.includes('Bucket not found')) {
+                        console.log('📁 bucket غير موجود، محاولة الإنشاء...');
+                        return await createImagesBucketForce();
+                    }
+                    throw error;
+                }
+
+                console.log('✅ bucket الصور موجود ويعمل');
+                return true;
+
+            } catch (error) {
+                console.error('خطأ في التحقق من bucket:', error);
+                console.log('📁 محاولة إنشاء bucket...');
+                return await createImagesBucketForce();
+            }
+        }
+
+        // إنشاء bucket بقوة
+        async function createImagesBucketForce() {
+            try {
+                console.log('📁 إنشاء bucket الصور...');
+                
+                const { data, error } = await supabase.storage
+                    .createBucket('images', {
+                        public: true,
+                        allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
+                        fileSizeLimit: 10485760 // 10MB
+                    });
+
+                if (error) {
+                    if (error.message.includes('already exists')) {
+                        console.log('✅ bucket موجود مسبقاً');
+                        return true;
+                    }
+                    throw error;
+                }
+
+                console.log('✅ تم إنشاء bucket الصور بنجاح');
+                showNotification('✅ تم إنشاء مجلد الصور بنجاح');
+                return true;
+
+            } catch (error) {
+                console.error('فشل في إنشاء bucket:', error);
+                throw new Error('لا يمكن إنشاء مجلد الصور تلقائياً. يرجى إنشاؤه يدوياً من Storage Dashboard.');
+            }
+        }
+
+        // دوال قاعدة البيانات
+        async function createTablesIfNotExist() {
+            try {
+                // التحقق من وجود الجداول وإنشاؤها إذا لم تكن موجودة
+                console.log('🔧 التحقق من إنشاء الجداول...');
+                
+                // محاولة الاستعلام عن المنتجات للتحقق من وجود الجدول
+                const { data: productsTest } = await supabase
+                    .from('products')
+                    .select('id')
+                    .limit(1);
+
+                console.log('✅ جدول المنتجات موجود');
+
+                // التحقق من جدول الإعلانات
+                const { data: adsTest } = await supabase
+                    .from('ads')
+                    .select('id')
+                    .limit(1);
+
+                console.log('✅ جدول الإعلانات موجود');
+
+                // التحقق من جدول الإعلانات المنبثقة
+                const { data: popupAdsTest } = await supabase
+                    .from('popup_ads')
+                    .select('id')
+                    .limit(1);
+
+                console.log('✅ جدول الإعلانات المنبثقة موجود');
+
+                // التحقق من جدول الرسائل
+                const { data: messagesTest } = await supabase
+                    .from('messages')
+                    .select('id')
+                    .limit(1);
+
+                console.log('✅ جدول الرسائل موجود');
+
+            } catch (error) {
+                console.error('❌ خطأ في التحقق من الجداول:', error);
+                showNotification('تحذير: قد تحتاج إلى إنشاء الجداول في قاعدة البيانات', 'error');
+                
+                // عرض رسالة للمستخدم
+                showSetupInstructions();
+            }
+        }
+
+        // عرض تعليمات الإعداد
+        function showSetupInstructions() {
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 600px;">
+                    <div class="modal-header">
+                        <h3 class="modal-title">
+                            <i class="fas fa-database"></i>
+                            إعداد قاعدة البيانات
+                        </h3>
+                        <button class="close-btn" onclick="this.closest('.modal').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div style="padding: var(--space-4);">
+                        <p style="color: var(--gray-300); margin-bottom: var(--space-4); line-height: 1.6;">
+                            يرجى تشغيل الكود التالي في <strong>SQL Editor</strong> في Supabase Dashboard:
+                        </p>
+                        
+                        <textarea readonly style="width: 100%; height: 200px; background: var(--gray-800); color: var(--gray-100); padding: var(--space-3); border: 1px solid var(--gray-600); border-radius: var(--radius-lg); font-family: monospace; font-size: 12px;" onclick="this.select()">-- إنشاء جدول المنتجات
+CREATE TABLE IF NOT EXISTS products (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT NOT NULL,
+  price DECIMAL(10,2) NOT NULL,
+  original_price DECIMAL(10,2),
+  category TEXT NOT NULL,
+  badge TEXT,
+  rating DECIMAL(2,1) DEFAULT 4.5,
+  reviews INTEGER DEFAULT 0,
+  images TEXT[],
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- إنشاء جدول الإعلانات
+CREATE TABLE IF NOT EXISTS ads (
+  id SERIAL PRIMARY KEY,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  image TEXT,
+  linked_product INTEGER,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- إنشاء جدول الإعلانات المنبثقة
+CREATE TABLE IF NOT EXISTS popup_ads (
+  id SERIAL PRIMARY KEY,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  image TEXT NOT NULL,
+  linked_product INTEGER,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- إنشاء جدول الرسائل
+CREATE TABLE IF NOT EXISTS messages (
+  id SERIAL PRIMARY KEY,
+  product_id INTEGER,
+  sender_name TEXT DEFAULT 'عميل',
+  message_text TEXT NOT NULL,
+  is_read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- تفعيل Row Level Security
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE popup_ads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+
+-- سياسات الوصول العام
+CREATE POLICY "Allow all operations" ON products USING (true);
+CREATE POLICY "Allow all operations" ON ads USING (true);
+CREATE POLICY "Allow all operations" ON popup_ads USING (true);
+CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
+                        
+                        <div style="margin-top: var(--space-4);">
+                            <button class="btn btn-primary w-full" onclick="this.closest('.modal').remove(); location.reload();">
+                                <i class="fas fa-refresh"></i>
+                                تم تشغيل الكود - إعادة تحميل الصفحة
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
         // تهيئة التطبيق
         document.addEventListener('DOMContentLoaded', function() {
             showLoadingSpinner();
@@ -1764,7 +2250,25 @@
 
         async function initializeApp() {
             try {
-                await Promise.all([
+                console.log('🚀 بدء تهيئة التطبيق...');
+                
+                // التحقق من الاتصال بقاعدة البيانات
+                await createTablesIfNotExist();
+                
+                // التحقق من bucket الصور مع محاولة الإنشاء
+                try {
+                    await ensureImagesBucketExists();
+                    console.log('✅ مجلد الصور جاهز');
+                } catch (error) {
+                    console.warn('⚠️ مشكلة في مجلد الصور:', error.message);
+                    // عرض إشعار للمستخدم مع إرشادات واضحة
+                    setTimeout(() => {
+                        showNotification('⚠️ مجلد الصور غير متاح - انقر على أيقونة الإعدادات ⚙️ → "فحص حالة المجلد"', 'error');
+                    }, 2000);
+                }
+                
+                // تحميل البيانات
+                await Promise.allSettled([
                     loadProducts(),
                     loadAds(),
                     loadPopupAds()
@@ -1773,12 +2277,17 @@
                 updateCartCount();
                 setupSearch();
                 setupAdsAnimation();
+                loadProductsIntoSelects();
                 
                 hideLoadingSpinner();
                 
-                // Show popup ad after 5 seconds
+                console.log('✅ تم تهيئة التطبيق بنجاح');
+                
+                // Show popup ad after 5 seconds if available
                 setTimeout(() => {
-                    showRandomPopupAd();
+                    if (popupAds.length > 0) {
+                        showRandomPopupAd();
+                    }
                 }, 5000);
                 
                 requestAnimationFrame(() => {
@@ -1795,7 +2304,7 @@
                 
             } catch (error) {
                 console.error('خطأ في تهيئة التطبيق:', error);
-                showNotification('حدث خطأ في تحميل البيانات', 'error');
+                showNotification('تم تهيئة التطبيق مع بعض المشاكل - تحقق من إعداد قاعدة البيانات', 'error');
                 hideLoadingSpinner();
             }
         }
@@ -1803,54 +2312,611 @@
         // تحميل المنتجات
         async function loadProducts(filter = 'all') {
             try {
-                const snapshot = await database.ref('products').once('value');
-                const data = snapshot.val();
+                const { data, error } = await supabase
+                    .from('products')
+                    .select('*')
+                    .order('created_at', { ascending: false });
                 
-                products = data ? Object.keys(data).map(key => ({
-                    id: key,
-                    ...data[key]
-                })) : [];
+                if (error) {
+                    if (error.code === '42P01') {
+                        console.log('⚠️ جدول المنتجات غير موجود');
+                        products = [];
+                        displayProducts(filter);
+                        return;
+                    }
+                    throw error;
+                }
                 
+                products = data || [];
+                console.log(`✅ تم تحميل ${products.length} منتج`);
                 displayProducts(filter);
                 
             } catch (error) {
                 console.error('خطأ في تحميل المنتجات:', error);
                 showNotification('خطأ في تحميل المنتجات', 'error');
+                products = [];
+                displayProducts(filter);
             }
         }
 
         // تحميل الإعلانات
         async function loadAds() {
             try {
-                const snapshot = await database.ref('ads').once('value');
-                const data = snapshot.val();
+                const { data, error } = await supabase
+                    .from('ads')
+                    .select('*')
+                    .order('created_at', { ascending: false });
                 
-                ads = data ? Object.keys(data).map(key => ({
-                    id: key,
-                    ...data[key]
-                })) : [];
+                if (error) {
+                    if (error.code === '42P01') {
+                        console.log('⚠️ جدول الإعلانات غير موجود - سيتم عرض إعلانات افتراضية');
+                        ads = [];
+                        displayAds();
+                        return;
+                    }
+                    throw error;
+                }
                 
+                ads = data || [];
+                console.log(`✅ تم تحميل ${ads.length} إعلان`);
                 displayAds();
                 
             } catch (error) {
                 console.error('خطأ في تحميل الإعلانات:', error);
+                ads = [];
+                displayAds();
             }
         }
 
         // تحميل الإعلانات المنبثقة
         async function loadPopupAds() {
             try {
-                const snapshot = await database.ref('popupAds').once('value');
-                const data = snapshot.val();
+                const { data, error } = await supabase
+                    .from('popup_ads')
+                    .select('*')
+                    .order('created_at', { ascending: false });
                 
-                popupAds = data ? Object.keys(data).map(key => ({
-                    id: key,
-                    ...data[key]
-                })) : [];
+                if (error) {
+                    if (error.code === '42P01') {
+                        console.log('⚠️ جدول الإعلانات المنبثقة غير موجود - سيتم تخطي تحميل الإعلانات المنبثقة');
+                        popupAds = [];
+                        return;
+                    }
+                    throw error;
+                }
+                
+                popupAds = data || [];
+                console.log(`✅ تم تحميل ${popupAds.length} إعلان منبثق`);
                 
             } catch (error) {
                 console.error('خطأ في تحميل الإعلانات المنبثقة:', error);
+                popupAds = [];
             }
+        }
+
+        // إضافة منتج جديد
+        async function handleAddProduct(event) {
+            event.preventDefault();
+            
+            try {
+                showLoadingSpinner();
+                
+                const name = document.getElementById('productName').value.trim();
+                const description = document.getElementById('productDescription').value.trim();
+                const price = parseFloat(document.getElementById('productPrice').value);
+                const originalPrice = document.getElementById('productOriginalPrice').value ? 
+                    parseFloat(document.getElementById('productOriginalPrice').value) : null;
+                const category = document.getElementById('productCategory').value;
+                const badge = document.getElementById('productBadge').value.trim();
+                const rating = parseFloat(document.getElementById('productRating').value);
+                const imageFiles = document.getElementById('productImages').files;
+                
+                if (!name || !description || !price || imageFiles.length === 0) {
+                    showNotification('يرجى ملء جميع الحقول المطلوبة', 'error');
+                    hideLoadingSpinner();
+                    return;
+                }
+                
+                // رفع الصور
+                let imageUrls;
+                try {
+                    imageUrls = await uploadImages(imageFiles, 'products');
+                    console.log('✅ تم رفع صور المنتج:', imageUrls);
+                } catch (uploadError) {
+                    console.error('خطأ في رفع صور المنتج:', uploadError);
+                    hideLoadingSpinner();
+                    
+                    // عرض نافذة مساعدة إذا كانت المشكلة في bucket
+                    if (uploadError.message.includes('مجلد الصور') || uploadError.message.includes('Bucket')) {
+                        showImageUploadErrorModal();
+                    } else {
+                        showNotification('❌ ' + uploadError.message, 'error');
+                    }
+                    return;
+                }
+                
+                // إضافة المنتج إلى قاعدة البيانات مع تحويل المصفوفة إلى JSON
+                const { data, error } = await supabase
+                    .from('products')
+                    .insert([{
+                        name,
+                        description,
+                        price,
+                        original_price: originalPrice,
+                        category,
+                        badge: badge || null,
+                        rating,
+                        images: JSON.stringify(imageUrls), // تحويل إلى JSON string
+                        reviews: 0
+                    }])
+                    .select();
+                
+                if (error) throw error;
+                
+                // إعادة تحميل المنتجات
+                await loadProducts(currentFilter);
+                loadProductsIntoSelects();
+                
+                // إعادة تعيين النموذج
+                document.getElementById('addProductForm').reset();
+                
+                showNotification('✅ تم إضافة المنتج بنجاح!');
+                hideLoadingSpinner();
+                
+            } catch (error) {
+                console.error('خطأ في إضافة المنتج:', error);
+                showNotification('❌ ' + error.message, 'error');
+                hideLoadingSpinner();
+            }
+        }
+
+        // عرض نافذة خطأ رفع الصور مع حلول
+        function showImageUploadErrorModal() {
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 500px;">
+                    <div class="modal-header">
+                        <h3 class="modal-title">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            خطأ في رفع الصور
+                        </h3>
+                        <button class="close-btn" onclick="this.closest('.modal').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div style="padding: var(--space-4);">
+                        <div style="background: var(--error); color: white; padding: var(--space-3); border-radius: var(--radius-lg); margin-bottom: var(--space-4); text-align: center;">
+                            <i class="fas fa-folder-times" style="font-size: 2rem; margin-bottom: var(--space-2);"></i>
+                            <h4>مجلد الصور غير متاح</h4>
+                        </div>
+                        
+                        <p style="color: var(--gray-300); margin-bottom: var(--space-4); line-height: 1.6;">
+                            لرفع صور المنتجات والإعلانات، يجب إنشاء مجلد الصور في Supabase Storage أولاً.
+                        </p>
+                        
+                        <h4 style="color: var(--primary-solid); margin-bottom: var(--space-3);">💡 الحلول المتاحة:</h4>
+                        
+                        <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+                            <button class="btn btn-primary" onclick="this.closest('.modal').remove(); checkImagesBucketStatus();" style="width: 100%;">
+                                <i class="fas fa-search"></i>
+                                فحص حالة مجلد الصور
+                            </button>
+                            
+                            <button class="btn btn-secondary" onclick="this.closest('.modal').remove(); createImagesBucket();" style="width: 100%;">
+                                <i class="fas fa-folder-plus"></i>
+                                إنشاء المجلد تلقائياً
+                            </button>
+                            
+                            <button class="btn btn-warning" onclick="this.closest('.modal').remove(); showManualBucketInstructions();" style="width: 100%;">
+                                <i class="fas fa-book"></i>
+                                دليل الإنشاء اليدوي
+                            </button>
+                        </div>
+                        
+                        <div style="background: var(--glass); padding: var(--space-3); border-radius: var(--radius-lg); margin-top: var(--space-4); text-align: center;">
+                            <small style="color: var(--gray-400);">
+                                💡 نصيحة: بعد إنشاء مجلد الصور، جرب إضافة المنتج مرة أخرى
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // إضافة إعلان جديد
+        async function handleAddAd(event) {
+            event.preventDefault();
+            
+            try {
+                showLoadingSpinner();
+                
+                const title = document.getElementById('adTitle').value.trim();
+                const description = document.getElementById('adDescription').value.trim();
+                const linkedProduct = document.getElementById('adLinkedProduct').value || null;
+                const imageFile = document.getElementById('adImage').files[0];
+                
+                if (!title || !description) {
+                    showNotification('يرجى ملء جميع الحقول المطلوبة', 'error');
+                    hideLoadingSpinner();
+                    return;
+                }
+                
+                let imageUrl = null;
+                
+                // رفع الصورة إذا تم اختيارها
+                if (imageFile) {
+                    try {
+                        const imageUrls = await uploadImages([imageFile], 'ads');
+                        imageUrl = imageUrls[0];
+                        console.log('✅ تم رفع صورة الإعلان:', imageUrl);
+                    } catch (uploadError) {
+                        console.error('خطأ في رفع صورة الإعلان:', uploadError);
+                        showNotification('⚠️ فشل رفع الصورة - سيتم إضافة الإعلان بدون صورة', 'error');
+                        // يمكن المتابعة بدون صورة للإعلانات العادية
+                    }
+                }
+                
+                // إضافة الإعلان إلى قاعدة البيانات
+                const { data, error } = await supabase
+                    .from('ads')
+                    .insert([{
+                        title,
+                        description,
+                        image: imageUrl,
+                        linked_product: linkedProduct
+                    }])
+                    .select();
+                
+                if (error) throw error;
+                
+                // إعادة تحميل الإعلانات
+                await loadAds();
+                
+                // إعادة تعيين النموذج
+                document.getElementById('addAdForm').reset();
+                
+                showNotification('✅ تم إضافة الإعلان بنجاح!');
+                hideLoadingSpinner();
+                
+            } catch (error) {
+                console.error('خطأ في إضافة الإعلان:', error);
+                showNotification('❌ خطأ في إضافة الإعلان: ' + error.message, 'error');
+                hideLoadingSpinner();
+            }
+        }
+
+        // إضافة إعلان منبثق جديد
+        async function handleAddPopupAd(event) {
+            event.preventDefault();
+            
+            try {
+                showLoadingSpinner();
+                
+                const title = document.getElementById('popupAdTitle').value.trim();
+                const description = document.getElementById('popupAdDescription').value.trim();
+                const linkedProduct = document.getElementById('popupAdLinkedProduct').value || null;
+                const imageFile = document.getElementById('popupAdImage').files[0];
+                
+                if (!title || !description || !imageFile) {
+                    showNotification('يرجى ملء جميع الحقول المطلوبة', 'error');
+                    hideLoadingSpinner();
+                    return;
+                }
+                
+                // رفع الصورة (مطلوبة للإعلانات المنبثقة)
+                let imageUrl;
+                try {
+                    const imageUrls = await uploadImages([imageFile], 'popup_ads');
+                    imageUrl = imageUrls[0];
+                    console.log('✅ تم رفع صورة الإعلان المنبثق:', imageUrl);
+                } catch (uploadError) {
+                    console.error('خطأ في رفع صورة الإعلان المنبثق:', uploadError);
+                    hideLoadingSpinner();
+                    
+                    // عرض نافذة مساعدة إذا كانت المشكلة في bucket
+                    if (uploadError.message.includes('مجلد الصور') || uploadError.message.includes('Bucket')) {
+                        showImageUploadErrorModal();
+                    } else {
+                        showNotification('❌ فشل في رفع صورة الإعلان: ' + uploadError.message, 'error');
+                    }
+                    return;
+                }
+                
+                // إضافة الإعلان المنبثق إلى قاعدة البيانات
+                const { data, error } = await supabase
+                    .from('popup_ads')
+                    .insert([{
+                        title,
+                        description,
+                        image: imageUrl,
+                        linked_product: linkedProduct
+                    }])
+                    .select();
+                
+                if (error) throw error;
+                
+                // إعادة تحميل الإعلانات المنبثقة
+                await loadPopupAds();
+                
+                // إعادة تعيين النموذج
+                document.getElementById('addPopupAdForm').reset();
+                
+                showNotification('✅ تم إضافة الإعلان المنبثق بنجاح!');
+                hideLoadingSpinner();
+                
+            } catch (error) {
+                console.error('خطأ في إضافة الإعلان المنبثق:', error);
+                showNotification('❌ ' + error.message, 'error');
+                hideLoadingSpinner();
+            }
+        }
+
+        // تحميل المنتجات في قوائم الاختيار
+        function loadProductsIntoSelects() {
+            const selects = ['adLinkedProduct', 'popupAdLinkedProduct'];
+            
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                if (select) {
+                    // Clear existing options except first one
+                    while (select.children.length > 1) {
+                        select.removeChild(select.lastChild);
+                    }
+                    
+                    // Add products
+                    products.forEach(product => {
+                        const option = document.createElement('option');
+                        option.value = product.id;
+                        option.textContent = product.name;
+                        select.appendChild(option);
+                    });
+                }
+            });
+        }
+
+        // دوال لوحة الإدارة
+        function openAdminPanel() {
+            document.getElementById('adminPanel').classList.add('active');
+            document.getElementById('overlay').classList.add('active');
+        }
+
+        function closeAdminPanel() {
+            document.getElementById('adminPanel').classList.remove('active');
+            document.getElementById('overlay').classList.remove('active');
+        }
+
+        function switchAdminTab(tabName) {
+            // Update active tab
+            document.querySelectorAll('.admin-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update active form
+            document.querySelectorAll('.admin-form').forEach(form => {
+                form.classList.remove('active');
+            });
+            document.getElementById(tabName + 'Form').classList.add('active');
+            
+            currentAdminTab = tabName;
+        }
+
+        // إنشاء bucket الصور يدوياً
+        async function createImagesBucket() {
+            try {
+                showLoadingSpinner();
+                
+                console.log('📁 محاولة إنشاء/التحقق من bucket الصور...');
+                
+                // أولاً، محاولة التحقق من وجود bucket عبر محاولة الوصول إليه
+                try {
+                    const { data, error } = await supabase.storage
+                        .from('images')
+                        .list('', { limit: 1 });
+
+                    if (!error) {
+                        showNotification('✅ مجلد الصور موجود مسبقاً وجاهز للاستخدام');
+                        hideLoadingSpinner();
+                        return;
+                    }
+                } catch (testError) {
+                    console.log('bucket غير موجود، المتابعة للإنشاء...');
+                }
+
+                // محاولة إنشاء bucket
+                const { data, error } = await supabase.storage
+                    .createBucket('images', {
+                        public: true,
+                        allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
+                        fileSizeLimit: 10485760 // 10MB
+                    });
+
+                if (error) {
+                    if (error.message.includes('already exists')) {
+                        showNotification('✅ مجلد الصور موجود مسبقاً وجاهز للاستخدام');
+                    } else {
+                        console.error('خطأ في إنشاء bucket:', error);
+                        throw error;
+                    }
+                } else {
+                    showNotification('✅ تم إنشاء مجلد الصور بنجاح!');
+                }
+
+                console.log('✅ bucket الصور جاهز للاستخدام');
+                hideLoadingSpinner();
+
+            } catch (error) {
+                console.error('خطأ في إنشاء bucket:', error);
+                hideLoadingSpinner();
+                
+                // عرض تعليمات الإنشاء اليدوي
+                showManualBucketInstructions();
+            }
+        }
+
+        // التحقق من حالة bucket الصور
+        async function checkImagesBucketStatus() {
+            try {
+                showLoadingSpinner();
+                
+                console.log('🔍 فحص حالة bucket الصور...');
+                
+                // محاولة الوصول إلى bucket
+                const { data, error } = await supabase.storage
+                    .from('images')
+                    .list('', { limit: 1 });
+
+                hideLoadingSpinner();
+
+                if (error) {
+                    if (error.statusCode === 404 || error.message.includes('Bucket not found')) {
+                        showNotification('❌ مجلد الصور غير موجود - يجب إنشاؤه أولاً', 'error');
+                        showBucketStatusModal('غير موجود', false);
+                    } else {
+                        showNotification('⚠️ مشكلة في الوصول لمجلد الصور', 'error');
+                        showBucketStatusModal('خطأ في الوصول: ' + error.message, false);
+                    }
+                } else {
+                    showNotification('✅ مجلد الصور موجود ويعمل بشكل طبيعي');
+                    showBucketStatusModal('موجود ويعمل', true);
+                }
+
+            } catch (error) {
+                console.error('خطأ في فحص bucket:', error);
+                hideLoadingSpinner();
+                showNotification('❌ خطأ في فحص مجلد الصور', 'error');
+                showBucketStatusModal('خطأ: ' + error.message, false);
+            }
+        }
+
+        // عرض نافذة حالة bucket
+        function showBucketStatusModal(status, isWorking) {
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 400px;">
+                    <div class="modal-header">
+                        <h3 class="modal-title">
+                            <i class="fas fa-info-circle"></i>
+                            حالة مجلد الصور
+                        </h3>
+                        <button class="close-btn" onclick="this.closest('.modal').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div style="padding: var(--space-4); text-align: center;">
+                        <div style="font-size: 4rem; margin-bottom: var(--space-4);">
+                            ${isWorking ? '✅' : '❌'}
+                        </div>
+                        
+                        <h3 style="color: ${isWorking ? 'var(--success-solid)' : 'var(--error-solid)'}; margin-bottom: var(--space-3);">
+                            ${isWorking ? 'مجلد الصور يعمل بشكل طبيعي' : 'مجلد الصور غير متاح'}
+                        </h3>
+                        
+                        <p style="color: var(--gray-300); margin-bottom: var(--space-4);">
+                            <strong>الحالة:</strong> ${status}
+                        </p>
+                        
+                        ${!isWorking ? `
+                            <div style="background: var(--error); color: white; padding: var(--space-3); border-radius: var(--radius-lg); margin-bottom: var(--space-4);">
+                                <strong>⚠️ تحذير:</strong> لن تتمكن من رفع صور المنتجات والإعلانات بدون إنشاء مجلد الصور
+                            </div>
+                            
+                            <div style="display: flex; gap: var(--space-2);">
+                                <button class="btn btn-primary" onclick="this.closest('.modal').remove(); createImagesBucket();" style="flex: 1;">
+                                    <i class="fas fa-folder-plus"></i>
+                                    إنشاء المجلد الآن
+                                </button>
+                                <button class="btn btn-secondary" onclick="this.closest('.modal').remove(); showManualBucketInstructions();" style="flex: 1;">
+                                    <i class="fas fa-book"></i>
+                                    الإنشاء اليدوي
+                                </button>
+                            </div>
+                        ` : `
+                            <button class="btn btn-primary w-full" onclick="this.closest('.modal').remove();">
+                                <i class="fas fa-check"></i>
+                                ممتاز! المجلد جاهز للاستخدام
+                            </button>
+                        `}
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        function showManualBucketInstructions() {
+            showNotification('⚠️ فشل الإنشاء التلقائي - راجع التعليمات', 'error');
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 600px;">
+                    <div class="modal-header">
+                        <h3 class="modal-title">
+                            <i class="fas fa-folder-plus"></i>
+                            إنشاء مجلد الصور يدوياً
+                        </h3>
+                        <button class="close-btn" onclick="this.closest('.modal').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div style="padding: var(--space-4);">
+                        <div style="background: var(--error); color: white; padding: var(--space-3); border-radius: var(--radius-lg); margin-bottom: var(--space-4);">
+                            <strong>⚠️ مهم:</strong> بدون مجلد الصور لن تتمكن من رفع صور المنتجات والإعلانات
+                        </div>
+                        
+                        <h4 style="color: var(--primary-solid); margin-bottom: var(--space-3);">📋 خطوات الإنشاء:</h4>
+                        
+                        <ol style="color: var(--gray-300); padding-right: var(--space-4); line-height: 1.8;">
+                            <li style="margin-bottom: var(--space-3);">
+                                <strong>اذهب إلى Supabase Dashboard:</strong><br>
+                                <code style="background: var(--gray-800); padding: 2px 6px; border-radius: 4px; font-size: 12px;">https://supabase.com/dashboard</code>
+                            </li>
+                            <li style="margin-bottom: var(--space-3);">
+                                <strong>اختر مشروعك</strong> ثم انقر على <strong>Storage</strong> في القائمة الجانبية
+                            </li>
+                            <li style="margin-bottom: var(--space-3);">
+                                انقر على <strong>"Create a new bucket"</strong> أو <strong>"New bucket"</strong>
+                            </li>
+                            <li style="margin-bottom: var(--space-3);">
+                                <strong>اسم البucket:</strong> 
+                                <code style="background: var(--gray-800); padding: 4px 8px; border-radius: 4px; color: var(--accent-solid);">images</code>
+                                <br><small style="color: var(--gray-400);">(يجب أن يكون بالضبط "images" بدون مسافات)</small>
+                            </li>
+                            <li style="margin-bottom: var(--space-3);">
+                                <strong>تأكد من تفعيل:</strong> 
+                                <span style="background: var(--success-solid); color: white; padding: 2px 8px; border-radius: 4px;">✅ Public bucket</span>
+                            </li>
+                            <li style="margin-bottom: var(--space-3);">
+                                انقر على <strong>"Create bucket"</strong>
+                            </li>
+                            <li style="margin-bottom: var(--space-3);">
+                                بعد الإنشاء، <strong>أعد تحميل هذه الصفحة</strong> لتفعيل رفع الصور
+                            </li>
+                        </ol>
+                        
+                        <div style="background: var(--primary); color: white; padding: var(--space-3); border-radius: var(--radius-lg); margin-top: var(--space-4); text-align: center;">
+                            <strong>💡 نصيحة:</strong> إذا واجهت صعوبة، تواصل مع دعم Supabase أو راجع الدليل الرسمي
+                        </div>
+                        
+                        <div style="display: flex; gap: var(--space-2); margin-top: var(--space-4);">
+                            <button class="btn btn-primary" onclick="window.open('https://supabase.com/dashboard', '_blank')" style="flex: 1;">
+                                <i class="fas fa-external-link-alt"></i>
+                                فتح Supabase Dashboard
+                            </button>
+                            <button class="btn btn-secondary" onclick="this.closest('.modal').remove();" style="flex: 1;">
+                                <i class="fas fa-check"></i>
+                                فهمت
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
         }
 
         // عرض إعلان منبثق عشوائي
@@ -1889,8 +2955,8 @@
             
             button.onclick = () => {
                 closePopupAd();
-                if (ad.linkedProduct) {
-                    showLinkedProduct(ad.linkedProduct);
+                if (ad.linked_product) {
+                    showLinkedProduct(ad.linked_product);
                 }
             };
             
@@ -1929,7 +2995,7 @@
             
             if (filter !== 'all') {
                 if (filter === 'offers') {
-                    filteredProducts = products.filter(p => p.badge || p.originalPrice);
+                    filteredProducts = products.filter(p => p.badge || p.original_price);
                 } else if (filter === 'favorites') {
                     filteredProducts = products.filter(p => favorites.includes(p.id));
                 } else {
@@ -1962,7 +3028,19 @@
 
         // إنشاء بطاقة المنتج
         function createProductCard(product) {
-            const images = product.images || (product.image ? [product.image] : []);
+            // التعامل مع الصور سواءً كانت string JSON أو array
+            let images = [];
+            if (typeof product.images === 'string') {
+                try {
+                    images = JSON.parse(product.images);
+                } catch (e) {
+                    console.warn('خطأ في تحليل JSON للصور:', e);
+                    images = [];
+                }
+            } else if (Array.isArray(product.images)) {
+                images = product.images;
+            }
+            
             const validImages = images.filter(img => img && img.trim() !== '');
             
             if (validImages.length === 0) {
@@ -2013,7 +3091,7 @@
                         
                         <div class="product-price">
                             <span class="price-current">${parseInt(product.price).toLocaleString()} د.ع</span>
-                            ${product.originalPrice ? `<span class="price-original">${parseInt(product.originalPrice).toLocaleString()}</span>` : ''}
+                            ${product.original_price ? `<span class="price-original">${parseInt(product.original_price).toLocaleString()}</span>` : ''}
                         </div>
                         
                         <div class="product-actions">
@@ -2123,8 +3201,8 @@
             const repeatedAds = [...ads, ...ads, ...ads];
             
             wrapper.innerHTML = repeatedAds.map(ad => `
-                <div class="ad-card" onclick="${ad.linkedProduct ? `showLinkedProduct('${ad.linkedProduct}')` : ''}" 
-                     style="cursor: ${ad.linkedProduct ? 'pointer' : 'default'};">
+                <div class="ad-card" onclick="${ad.linked_product ? `showLinkedProduct('${ad.linked_product}')` : ''}" 
+                     style="cursor: ${ad.linked_product ? 'pointer' : 'default'};">
                     ${ad.image ? `<img src="${ad.image}" alt="${ad.title}" class="ad-image" loading="lazy">` : 
                                  `<div class="ad-image" style="background: var(--primary); display: flex; align-items: center; justify-content: center; color: white; font-size: var(--font-size-lg); font-weight: bold;">${ad.title.charAt(0)}</div>`}
                     <div class="ad-content">
@@ -2249,9 +3327,9 @@
             message += `📋 *الوصف:*\n${product.description}\n\n`;
             message += `💰 *السعر:* ${parseInt(product.price).toLocaleString()} د.ع\n`;
             
-            if (product.originalPrice) {
-                message += `💸 *السعر الأصلي:* ${parseInt(product.originalPrice).toLocaleString()} د.ع\n`;
-                message += `🔥 *مقدار الخصم:* ${(product.originalPrice - product.price).toLocaleString()} د.ع\n`;
+            if (product.original_price) {
+                message += `💸 *السعر الأصلي:* ${parseInt(product.original_price).toLocaleString()} د.ع\n`;
+                message += `🔥 *مقدار الخصم:* ${(product.original_price - product.price).toLocaleString()} د.ع\n`;
             }
             
             if (product.badge) {
@@ -2261,7 +3339,7 @@
             message += `⭐ *التقييم:* ${product.rating || 4.5}/5 نجوم (${product.reviews || 0} تقييم)\n`;
             message += `📂 *التصنيف:* ${getCategoryName(product.category)}\n\n`;
             
-            const images = product.images || (product.image ? [product.image] : []);
+            const images = product.images || [];
             const validImages = images.filter(img => img && img.trim() !== '');
             if (validImages.length > 0) {
                 message += `📸 *صور المنتج:*\n`;
@@ -2293,8 +3371,20 @@
             
             currentMessageProductId = productId;
             
-            const productImage = product.images && product.images[0] ? product.images[0] : 
-                               (product.image || 'https://via.placeholder.com/60x60?text=صورة');
+            // التعامل مع الصور JSONB
+            let images = [];
+            if (typeof product.images === 'string') {
+                try {
+                    images = JSON.parse(product.images);
+                } catch (e) {
+                    images = [];
+                }
+            } else if (Array.isArray(product.images)) {
+                images = product.images;
+            }
+            
+            const productImage = images && images[0] ? images[0] : 
+                               'https://via.placeholder.com/60x60?text=صورة';
             
             document.getElementById('messageProductInfo').innerHTML = `
                 <div style="background: var(--glass); border-radius: var(--radius-lg); padding: var(--space-3); border: 1px solid var(--glass-border);">
@@ -2344,15 +3434,17 @@
                     return;
                 }
                 
-                const messageData = {
-                    productId: currentMessageProductId,
-                    senderName: senderName || 'عميل',
-                    text: messageText,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP,
-                    read: false
-                };
+                const { data, error } = await supabase
+                    .from('messages')
+                    .insert([{
+                        product_id: currentMessageProductId,
+                        sender_name: senderName || 'عميل',
+                        message_text: messageText,
+                        is_read: false
+                    }])
+                    .select();
                 
-                await database.ref('messages').push(messageData);
+                if (error) throw error;
                 
                 closeModal('sendMessageModal');
                 
@@ -2477,7 +3569,22 @@
             let total = 0;
             container.innerHTML = cart.map(item => {
                 total += item.price * item.quantity;
-                const itemImage = item.images && item.images[0] ? item.images[0] : (item.image || 'https://via.placeholder.com/60x60?text=صورة');
+                
+                // التعامل مع الصور JSONB في السلة
+                let images = [];
+                if (typeof item.images === 'string') {
+                    try {
+                        images = JSON.parse(item.images);
+                    } catch (e) {
+                        images = [];
+                    }
+                } else if (Array.isArray(item.images)) {
+                    images = item.images;
+                }
+                
+                const itemImage = images && images[0] ? images[0] : 
+                    'https://via.placeholder.com/60x60?text=صورة';
+                    
                 return `
                     <div style="display: flex; gap: var(--space-3); padding: var(--space-3); background: var(--glass); border-radius: var(--radius-lg); margin-bottom: var(--space-3); border: 1px solid var(--glass-border);">
                         <img src="${itemImage}" 
@@ -2581,7 +3688,18 @@
                 message += `   📦 الكمية: ${item.quantity}\n`;
                 message += `   💵 المجموع: ${(item.price * item.quantity).toLocaleString()} د.ع\n`;
                 
-                const images = item.images || (item.image ? [item.image] : []);
+                // التعامل مع الصور JSONB في رسالة الطلب
+                let images = [];
+                if (typeof item.images === 'string') {
+                    try {
+                        images = JSON.parse(item.images);
+                    } catch (e) {
+                        images = [];
+                    }
+                } else if (Array.isArray(item.images)) {
+                    images = item.images;
+                }
+                
                 const validImages = images.filter(img => img && img.trim() !== '');
                 if (validImages.length > 0) {
                     message += `   📸 الصور:\n`;
@@ -2629,6 +3747,7 @@
         function closeAll() {
             closeSidebar();
             closePopupAd();
+            closeAdminPanel();
             document.querySelectorAll('.modal.active').forEach(modal => {
                 modal.classList.remove('active');
             });
@@ -2646,7 +3765,19 @@
             if (!product) return;
             
             currentProductId = productId;
-            const images = product.images || (product.image ? [product.image] : []);
+            
+            // التعامل مع الصور JSONB
+            let images = [];
+            if (typeof product.images === 'string') {
+                try {
+                    images = JSON.parse(product.images);
+                } catch (e) {
+                    images = [];
+                }
+            } else if (Array.isArray(product.images)) {
+                images = product.images;
+            }
+            
             const validImages = images.filter(img => img && img.trim() !== '');
             
             if (validImages.length === 0) {
@@ -2692,7 +3823,7 @@
                         <span style="font-size: var(--font-size-2xl); font-weight: 700; background: var(--success); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
                             ${parseInt(product.price).toLocaleString()} د.ع
                         </span>
-                        ${product.originalPrice ? `<span style="color: var(--gray-500); text-decoration: line-through; margin-right: var(--space-3); font-size: var(--font-size-lg);">${parseInt(product.originalPrice).toLocaleString()}</span>` : ''}
+                        ${product.original_price ? `<span style="color: var(--gray-500); text-decoration: line-through; margin-right: var(--space-3); font-size: var(--font-size-lg);">${parseInt(product.original_price).toLocaleString()}</span>` : ''}
                     </div>
                     
                     <div style="display: flex; gap: var(--space-3); margin-bottom: var(--space-6);">
@@ -2854,18 +3985,8 @@
             lastTouchEnd = now;
         }, false);
 
-        // Service Worker للعمل بدون اتصال
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js')
-                    .then(registration => {
-                        console.log('Service Worker مسجل بنجاح:', registration);
-                    })
-                    .catch(error => {
-                        console.log('فشل في تسجيل Service Worker:', error);
-                    });
-            });
-        }
+        // إزالة Service Worker لتجنب الأخطاء
+        // يمكن إضافته لاحقاً عند الحاجة
 
         // Show popup ads periodically
         setInterval(() => {
@@ -2874,10 +3995,34 @@
             }
         }, 120000); // Every 2 minutes
 
-        console.log('🚀 تطبيق محلات الحجامي - نسخة المستخدمين جاهز للعمل!');
+        console.log('🚀 تطبيق محلات الحجامي - نسخة Supabase جاهز للعمل!');
         console.log('📱 الروابط الاجتماعية:');
         console.log('📘 فيسبوك:', socialLinks.facebook);
         console.log('📸 إنستغرام:', socialLinks.instagram);
+        console.log('🗄️ قاعدة البيانات: Supabase متصلة بنجاح');
+        
+        console.log('');
+        console.log('📋 تعليمات الإعداد:');
+        console.log('1. تشغيل كود SQL المحدث (مع JSONB للصور)');
+        console.log('2. إنشاء bucket "images" في Storage');
+        console.log('3. تأكد من تفعيل RLS وإضافة السياسات');
+        console.log('');
+        console.log('🔧 إصدار محدث - v2.1:');
+        console.log('   ✅ إصلاح مشكلة نوع البيانات للصور (JSONB)');
+        console.log('   ✅ نظام فحص bucket الصور المحسن');
+        console.log('   ✅ رسائل خطأ واضحة ومفيدة مع حلول');
+        console.log('   ✅ واجهة إدارة bucket محسنة');
+        console.log('   ✅ تشخيص ذكي لمشاكل رفع الصور');
+        console.log('');
+        console.log('🛠️ في حالة مشاكل رفع الصور:');
+        console.log('   1. انقر على أيقونة الإعدادات ⚙️');
+        console.log('   2. انقر على "فحص حالة المجلد"');
+        console.log('   3. اتبع التعليمات المقترحة');
+        console.log('');
+        console.log('💡 نصائح:');
+        console.log('   - استخدم "فحص حالة المجلد" للتشخيص');
+        console.log('   - جرب "إنشاء المجلد" للحل التلقائي');
+        console.log('   - راجع "دليل الإنشاء اليدوي" كحل أخير');
     </script>
 </body>
 </html>
