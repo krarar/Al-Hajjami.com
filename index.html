@@ -2621,26 +2621,54 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
             
             try {
                 showLoadingSpinner();
+                console.log('🔄 بدء إضافة إعلان منبثق...');
                 
-                // التحقق من وجود العناصر قبل قراءة قيمها
+                // التحقق من وجود النموذج أولاً
+                const form = document.getElementById('addPopupAdForm');
+                if (!form) {
+                    throw new Error('نموذج الإعلان المنبثق غير موجود');
+                }
+                
+                // قراءة القيم مع التحقق من كل حقل
                 const titleElement = document.getElementById('popupAdTitle');
                 const descriptionElement = document.getElementById('popupAdDescription');
                 const linkedProductElement = document.getElementById('popupAdLinkedProduct');
                 const imageFileElement = document.getElementById('popupAdImage');
                 
-                if (!titleElement || !descriptionElement || !linkedProductElement || !imageFileElement) {
-                    showNotification('خطأ في العثور على حقول النموذج', 'error');
-                    hideLoadingSpinner();
-                    return;
+                console.log('🔍 فحص الحقول:', {
+                    title: !!titleElement,
+                    description: !!descriptionElement,
+                    linkedProduct: !!linkedProductElement,
+                    image: !!imageFileElement
+                });
+                
+                if (!titleElement) {
+                    throw new Error('حقل العنوان غير موجود في النموذج');
+                }
+                if (!descriptionElement) {
+                    throw new Error('حقل الوصف غير موجود في النموذج');
+                }
+                if (!linkedProductElement) {
+                    throw new Error('حقل ربط المنتج غير موجود في النموذج');
+                }
+                if (!imageFileElement) {
+                    throw new Error('حقل الصورة غير موجود في النموذج');
                 }
                 
-                const title = titleElement.value.trim();
-                const description = descriptionElement.value.trim();
-                const linkedProduct = linkedProductElement.value || null;
-                const imageFile = imageFileElement.files[0];
+                const title = titleElement.value ? titleElement.value.trim() : '';
+                const description = descriptionElement.value ? descriptionElement.value.trim() : '';
+                const linkedProduct = linkedProductElement.value ? linkedProductElement.value.trim() : null;
+                const imageFile = imageFileElement.files ? imageFileElement.files[0] : null;
+                
+                console.log('📝 القيم المقروءة:', {
+                    title: title,
+                    description: description,
+                    linkedProduct: linkedProduct,
+                    hasImage: !!imageFile
+                });
                 
                 if (!title || !description || !imageFile) {
-                    showNotification('يرجى ملء جميع الحقول المطلوبة', 'error');
+                    showNotification('يرجى ملء جميع الحقول المطلوبة (العنوان، الوصف، الصورة)', 'error');
                     hideLoadingSpinner();
                     return;
                 }
@@ -2648,11 +2676,12 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
                 // رفع الصورة (مطلوبة للإعلانات المنبثقة)
                 let imageUrl;
                 try {
+                    console.log('📤 رفع صورة الإعلان المنبثق...');
                     const imageUrls = await uploadImages([imageFile], 'popup_ads');
                     imageUrl = imageUrls[0];
                     console.log('✅ تم رفع صورة الإعلان المنبثق:', imageUrl);
                 } catch (uploadError) {
-                    console.error('خطأ في رفع صورة الإعلان المنبثق:', uploadError);
+                    console.error('❌ خطأ في رفع صورة الإعلان المنبثق:', uploadError);
                     hideLoadingSpinner();
                     
                     // عرض نافذة مساعدة إذا كانت المشكلة في bucket
@@ -2672,9 +2701,11 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
                 };
                 
                 // إضافة linked_product فقط إذا تم تحديد منتج
-                if (linkedProduct) {
-                    popupAdData.linked_product = linkedProduct;
+                if (linkedProduct && linkedProduct !== '') {
+                    popupAdData.linked_product = parseInt(linkedProduct);
                 }
+                
+                console.log('💾 حفظ الإعلان المنبثق:', popupAdData);
                 
                 // إضافة الإعلان المنبثق إلى قاعدة البيانات
                 const { data, error } = await supabase
@@ -2685,7 +2716,7 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
                 if (error) {
                     // إذا كان الخطأ متعلق بـ linked_product، جرب بدونه
                     if (error.message.includes('linked_product')) {
-                        console.warn('عمود linked_product غير موجود في popup_ads، إضافة الإعلان بدونه...');
+                        console.warn('⚠️ عمود linked_product غير موجود في popup_ads، إضافة الإعلان بدونه...');
                         const { data: retryData, error: retryError } = await supabase
                             .from('popup_ads')
                             .insert([{
@@ -2709,13 +2740,14 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
                 await loadPopupAds();
                 
                 // إعادة تعيين النموذج
-                document.getElementById('addPopupAdForm').reset();
+                form.reset();
                 
                 hideLoadingSpinner();
+                console.log('✅ تم إنجاز إضافة الإعلان المنبثق بنجاح');
                 
             } catch (error) {
-                console.error('خطأ في إضافة الإعلان المنبثق:', error);
-                showNotification('❌ ' + error.message, 'error');
+                console.error('❌ خطأ في إضافة الإعلان المنبثق:', error);
+                showNotification('❌ خطأ في إضافة الإعلان المنبثق: ' + error.message, 'error');
                 hideLoadingSpinner();
             }
         }
@@ -4069,26 +4101,28 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
         
         console.log('');
         console.log('📋 تعليمات الإعداد:');
-        console.log('1. تشغيل كود SQL المحدث (مع JSONB للصور)');
+        console.log('1. تشغيل كود SQL المحدث (مع إصلاح linked_product)');
         console.log('2. إنشاء bucket "images" في Storage');
         console.log('3. تأكد من تفعيل RLS وإضافة السياسات');
         console.log('');
-        console.log('🔧 إصدار محدث - v2.1:');
-        console.log('   ✅ إصلاح مشكلة نوع البيانات للصور (JSONB)');
-        console.log('   ✅ نظام فحص bucket الصور المحسن');
-        console.log('   ✅ رسائل خطأ واضحة ومفيدة مع حلول');
+        console.log('🔧 إصدار محدث - v2.2:');
+        console.log('   ✅ إصلاح مشكلة "Cannot read properties of undefined"');
+        console.log('   ✅ إصلاح مشكلة linked_product المفقود');
+        console.log('   ✅ تحسين التحقق من صحة النماذج');
+        console.log('   ✅ تشخيص دقيق للأخطاء مع سجلات مفصلة');
+        console.log('   ✅ معالجة ذكية للأخطاء مع حلول تلقائية');
         console.log('   ✅ واجهة إدارة bucket محسنة');
-        console.log('   ✅ تشخيص ذكي لمشاكل رفع الصور');
         console.log('');
-        console.log('🛠️ في حالة مشاكل رفع الصور:');
-        console.log('   1. انقر على أيقونة الإعدادات ⚙️');
-        console.log('   2. انقر على "فحص حالة المجلد"');
-        console.log('   3. اتبع التعليمات المقترحة');
+        console.log('🛠️ في حالة مشاكل الإعلانات:');
+        console.log('   1. تشغيل كود SQL الإصلاح الجديد');
+        console.log('   2. إعادة تحميل الصفحة');
+        console.log('   3. جرب إضافة إعلان جديد');
         console.log('');
         console.log('💡 نصائح:');
+        console.log('   - راجع Console للحصول على تفاصيل أكثر');
         console.log('   - استخدم "فحص حالة المجلد" للتشخيص');
-        console.log('   - جرب "إنشاء المجلد" للحل التلقائي');
-        console.log('   - راجع "دليل الإنشاء اليدوي" كحل أخير');
+        console.log('   - الإعلانات العادية تعمل بدون صور');
+        console.log('   - الإعلانات المنبثقة تحتاج صورة إجبارية');
     </script>
 </body>
 </html>
