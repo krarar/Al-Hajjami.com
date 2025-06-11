@@ -2559,18 +2559,46 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
                     }
                 }
                 
+                // إنشاء كائن البيانات بدون linked_product إذا لم يكن العمود موجوداً
+                const adData = {
+                    title,
+                    description,
+                    image: imageUrl
+                };
+                
+                // إضافة linked_product فقط إذا تم تحديد منتج
+                if (linkedProduct) {
+                    adData.linked_product = linkedProduct;
+                }
+                
                 // إضافة الإعلان إلى قاعدة البيانات
                 const { data, error } = await supabase
                     .from('ads')
-                    .insert([{
-                        title,
-                        description,
-                        image: imageUrl,
-                        linked_product: linkedProduct
-                    }])
+                    .insert([adData])
                     .select();
                 
-                if (error) throw error;
+                if (error) {
+                    // إذا كان الخطأ متعلق بـ linked_product، جرب بدونه
+                    if (error.message.includes('linked_product')) {
+                        console.warn('عمود linked_product غير موجود، إضافة الإعلان بدونه...');
+                        const { data: retryData, error: retryError } = await supabase
+                            .from('ads')
+                            .insert([{
+                                title,
+                                description,
+                                image: imageUrl
+                            }])
+                            .select();
+                        
+                        if (retryError) throw retryError;
+                        
+                        showNotification('✅ تم إضافة الإعلان بنجاح! (ملاحظة: ربط المنتج غير متاح)', 'warning');
+                    } else {
+                        throw error;
+                    }
+                } else {
+                    showNotification('✅ تم إضافة الإعلان بنجاح!');
+                }
                 
                 // إعادة تحميل الإعلانات
                 await loadAds();
@@ -2578,7 +2606,6 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
                 // إعادة تعيين النموذج
                 document.getElementById('addAdForm').reset();
                 
-                showNotification('✅ تم إضافة الإعلان بنجاح!');
                 hideLoadingSpinner();
                 
             } catch (error) {
@@ -2595,10 +2622,22 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
             try {
                 showLoadingSpinner();
                 
-                const title = document.getElementById('popupAdTitle').value.trim();
-                const description = document.getElementById('popupAdDescription').value.trim();
-                const linkedProduct = document.getElementById('popupAdLinkedProduct').value || null;
-                const imageFile = document.getElementById('popupAdImage').files[0];
+                // التحقق من وجود العناصر قبل قراءة قيمها
+                const titleElement = document.getElementById('popupAdTitle');
+                const descriptionElement = document.getElementById('popupAdDescription');
+                const linkedProductElement = document.getElementById('popupAdLinkedProduct');
+                const imageFileElement = document.getElementById('popupAdImage');
+                
+                if (!titleElement || !descriptionElement || !linkedProductElement || !imageFileElement) {
+                    showNotification('خطأ في العثور على حقول النموذج', 'error');
+                    hideLoadingSpinner();
+                    return;
+                }
+                
+                const title = titleElement.value.trim();
+                const description = descriptionElement.value.trim();
+                const linkedProduct = linkedProductElement.value || null;
+                const imageFile = imageFileElement.files[0];
                 
                 if (!title || !description || !imageFile) {
                     showNotification('يرجى ملء جميع الحقول المطلوبة', 'error');
@@ -2625,18 +2664,46 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
                     return;
                 }
                 
+                // إنشاء كائن البيانات
+                const popupAdData = {
+                    title,
+                    description,
+                    image: imageUrl
+                };
+                
+                // إضافة linked_product فقط إذا تم تحديد منتج
+                if (linkedProduct) {
+                    popupAdData.linked_product = linkedProduct;
+                }
+                
                 // إضافة الإعلان المنبثق إلى قاعدة البيانات
                 const { data, error } = await supabase
                     .from('popup_ads')
-                    .insert([{
-                        title,
-                        description,
-                        image: imageUrl,
-                        linked_product: linkedProduct
-                    }])
+                    .insert([popupAdData])
                     .select();
                 
-                if (error) throw error;
+                if (error) {
+                    // إذا كان الخطأ متعلق بـ linked_product، جرب بدونه
+                    if (error.message.includes('linked_product')) {
+                        console.warn('عمود linked_product غير موجود في popup_ads، إضافة الإعلان بدونه...');
+                        const { data: retryData, error: retryError } = await supabase
+                            .from('popup_ads')
+                            .insert([{
+                                title,
+                                description,
+                                image: imageUrl
+                            }])
+                            .select();
+                        
+                        if (retryError) throw retryError;
+                        
+                        showNotification('✅ تم إضافة الإعلان المنبثق بنجاح! (ملاحظة: ربط المنتج غير متاح)');
+                    } else {
+                        throw error;
+                    }
+                } else {
+                    showNotification('✅ تم إضافة الإعلان المنبثق بنجاح!');
+                }
                 
                 // إعادة تحميل الإعلانات المنبثقة
                 await loadPopupAds();
@@ -2644,7 +2711,6 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
                 // إعادة تعيين النموذج
                 document.getElementById('addPopupAdForm').reset();
                 
-                showNotification('✅ تم إضافة الإعلان المنبثق بنجاح!');
                 hideLoadingSpinner();
                 
             } catch (error) {
