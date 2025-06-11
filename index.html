@@ -2533,34 +2533,13 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
             try {
                 showLoadingSpinner();
                 
-                console.log('🔄 بدء إضافة إعلان جديد...');
-                
-                // البحث عن العناصر بالأسماء الصحيحة
-                const titleElement = document.getElementById('adTitle') || 
-                                   document.querySelector('#addAdForm input[placeholder*="عنوان"]');
-                                   
-                const descriptionElement = document.getElementById('adDescription') || 
-                                         document.querySelector('#addAdForm textarea[placeholder*="وصف"]');
-                                         
-                const linkedProductElement = document.getElementById('adLinkedProduct') || 
-                                           document.querySelector('#addAdForm select');
-                                           
-                const imageFileElement = document.getElementById('adImage') || 
-                                       document.querySelector('#addAdForm input[type="file"]');
-                
-                if (!titleElement || !descriptionElement) {
-                    showNotification('❌ خطأ: لم يتم العثور على حقول النموذج المطلوبة', 'error');
-                    hideLoadingSpinner();
-                    return;
-                }
-                
-                const title = titleElement.value?.trim() || '';
-                const description = descriptionElement.value?.trim() || '';
-                const linkedProduct = linkedProductElement?.value || null;
-                const imageFile = imageFileElement?.files?.[0];
+                const title = document.getElementById('adTitle').value.trim();
+                const description = document.getElementById('adDescription').value.trim();
+                const linkedProduct = document.getElementById('adLinkedProduct').value || null;
+                const imageFile = document.getElementById('adImage').files[0];
                 
                 if (!title || !description) {
-                    showNotification('❌ يرجى ملء العنوان والوصف على الأقل', 'error');
+                    showNotification('يرجى ملء جميع الحقول المطلوبة', 'error');
                     hideLoadingSpinner();
                     return;
                 }
@@ -2574,8 +2553,8 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
                         imageUrl = imageUrls[0];
                         console.log('✅ تم رفع صورة الإعلان:', imageUrl);
                     } catch (uploadError) {
-                        console.error('❌ خطأ في رفع صورة الإعلان:', uploadError);
-                        showNotification('⚠️ فشل رفع الصورة - سيتم إضافة الإعلان بدون صورة', 'warning');
+                        console.error('خطأ في رفع صورة الإعلان:', uploadError);
+                        showNotification('⚠️ فشل رفع الصورة - سيتم إضافة الإعلان بدون صورة', 'error');
                         // يمكن المتابعة بدون صورة للإعلانات العادية
                     }
                 }
@@ -2601,7 +2580,7 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
                 if (error) {
                     // إذا كان الخطأ متعلق بـ linked_product، جرب بدونه
                     if (error.message.includes('linked_product')) {
-                        console.warn('⚠️ عمود linked_product غير موجود، إضافة الإعلان بدونه...');
+                        console.warn('عمود linked_product غير موجود، إضافة الإعلان بدونه...');
                         const { data: retryData, error: retryError } = await supabase
                             .from('ads')
                             .insert([{
@@ -2625,15 +2604,12 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
                 await loadAds();
                 
                 // إعادة تعيين النموذج
-                const form = document.getElementById('addAdForm');
-                if (form) {
-                    form.reset();
-                }
+                document.getElementById('addAdForm').reset();
                 
                 hideLoadingSpinner();
                 
             } catch (error) {
-                console.error('❌ خطأ في إضافة الإعلان:', error);
+                console.error('خطأ في إضافة الإعلان:', error);
                 showNotification('❌ خطأ في إضافة الإعلان: ' + error.message, 'error');
                 hideLoadingSpinner();
             }
@@ -2646,62 +2622,28 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
             try {
                 showLoadingSpinner();
                 
-                console.log('🔄 بدء إضافة إعلان منبثق...');
+                // التحقق من وجود العناصر قبل قراءة قيمها
+                const titleElement = document.getElementById('popupAdTitle');
+                const descriptionElement = document.getElementById('popupAdDescription');
+                const linkedProductElement = document.getElementById('popupAdLinkedProduct');
+                const imageFileElement = document.getElementById('popupAdImage');
                 
-                // البحث عن العناصر بالأسماء الصحيحة
-                const titleElement = document.getElementById('popupTitle') || 
-                                   document.getElementById('popupAdTitle') ||
-                                   document.querySelector('#addPopupAdForm input[placeholder*="عنوان"]');
-                                   
-                const descriptionElement = document.getElementById('popupDescription') || 
-                                         document.getElementById('popupAdDescription') ||
-                                         document.querySelector('#addPopupAdForm textarea[placeholder*="وصف"]');
-                                         
-                const linkedProductElement = document.getElementById('popupLinkedProduct') || 
-                                           document.getElementById('popupAdLinkedProduct') ||
-                                           document.querySelector('#addPopupAdForm select');
-                                           
-                const imageFileElement = document.getElementById('popupImage') || 
-                                       document.getElementById('popupAdImage') ||
-                                       document.querySelector('#addPopupAdForm input[type="file"]');
-                
-                console.log('🔍 فحص العناصر:', {
-                    title: !!titleElement,
-                    description: !!descriptionElement, 
-                    linkedProduct: !!linkedProductElement,
-                    imageFile: !!imageFileElement
-                });
-                
-                if (!titleElement || !descriptionElement || !imageFileElement) {
-                    showNotification('❌ خطأ: لم يتم العثور على حقول النموذج المطلوبة', 'error');
-                    console.error('عناصر مفقودة:', {
-                        titleElement: !!titleElement,
-                        descriptionElement: !!descriptionElement,
-                        imageFileElement: !!imageFileElement
-                    });
+                if (!titleElement || !descriptionElement || !linkedProductElement || !imageFileElement) {
+                    showNotification('خطأ في العثور على حقول النموذج', 'error');
                     hideLoadingSpinner();
                     return;
                 }
                 
-                const title = titleElement.value?.trim() || '';
-                const description = descriptionElement.value?.trim() || '';
-                const linkedProduct = linkedProductElement?.value || null;
-                const imageFile = imageFileElement.files?.[0];
-                
-                console.log('📝 قيم النموذج:', {
-                    title: title,
-                    description: description,
-                    linkedProduct: linkedProduct,
-                    imageFile: !!imageFile
-                });
+                const title = titleElement.value.trim();
+                const description = descriptionElement.value.trim();
+                const linkedProduct = linkedProductElement.value || null;
+                const imageFile = imageFileElement.files[0];
                 
                 if (!title || !description || !imageFile) {
-                    showNotification('❌ يرجى ملء جميع الحقول المطلوبة (العنوان والوصف والصورة)', 'error');
+                    showNotification('يرجى ملء جميع الحقول المطلوبة', 'error');
                     hideLoadingSpinner();
                     return;
                 }
-                
-                console.log('📤 بدء رفع الصورة...');
                 
                 // رفع الصورة (مطلوبة للإعلانات المنبثقة)
                 let imageUrl;
@@ -2710,7 +2652,7 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
                     imageUrl = imageUrls[0];
                     console.log('✅ تم رفع صورة الإعلان المنبثق:', imageUrl);
                 } catch (uploadError) {
-                    console.error('❌ خطأ في رفع صورة الإعلان المنبثق:', uploadError);
+                    console.error('خطأ في رفع صورة الإعلان المنبثق:', uploadError);
                     hideLoadingSpinner();
                     
                     // عرض نافذة مساعدة إذا كانت المشكلة في bucket
@@ -2721,8 +2663,6 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
                     }
                     return;
                 }
-                
-                console.log('💾 بدء حفظ الإعلان في قاعدة البيانات...');
                 
                 // إنشاء كائن البيانات
                 const popupAdData = {
@@ -2743,11 +2683,9 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
                     .select();
                 
                 if (error) {
-                    console.error('❌ خطأ في قاعدة البيانات:', error);
-                    
                     // إذا كان الخطأ متعلق بـ linked_product، جرب بدونه
                     if (error.message.includes('linked_product')) {
-                        console.warn('⚠️ عمود linked_product غير موجود في popup_ads، إضافة الإعلان بدونه...');
+                        console.warn('عمود linked_product غير موجود في popup_ads، إضافة الإعلان بدونه...');
                         const { data: retryData, error: retryError } = await supabase
                             .from('popup_ads')
                             .insert([{
@@ -2757,37 +2695,27 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
                             }])
                             .select();
                         
-                        if (retryError) {
-                            console.error('❌ فشل في المحاولة الثانية:', retryError);
-                            throw retryError;
-                        }
+                        if (retryError) throw retryError;
                         
-                        console.log('✅ تم إضافة الإعلان بنجاح (بدون ربط المنتج)');
                         showNotification('✅ تم إضافة الإعلان المنبثق بنجاح! (ملاحظة: ربط المنتج غير متاح)');
                     } else {
                         throw error;
                     }
                 } else {
-                    console.log('✅ تم إضافة الإعلان بنجاح مع جميع البيانات');
                     showNotification('✅ تم إضافة الإعلان المنبثق بنجاح!');
                 }
                 
                 // إعادة تحميل الإعلانات المنبثقة
-                console.log('🔄 إعادة تحميل الإعلانات المنبثقة...');
                 await loadPopupAds();
                 
                 // إعادة تعيين النموذج
-                const form = document.getElementById('addPopupAdForm');
-                if (form) {
-                    form.reset();
-                    console.log('✅ تم إعادة تعيين النموذج');
-                }
+                document.getElementById('addPopupAdForm').reset();
                 
                 hideLoadingSpinner();
                 
             } catch (error) {
-                console.error('❌ خطأ عام في إضافة الإعلان المنبثق:', error);
-                showNotification('❌ خطأ في إضافة الإعلان: ' + error.message, 'error');
+                console.error('خطأ في إضافة الإعلان المنبثق:', error);
+                showNotification('❌ ' + error.message, 'error');
                 hideLoadingSpinner();
             }
         }
@@ -4141,26 +4069,26 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
         
         console.log('');
         console.log('📋 تعليمات الإعداد:');
-        console.log('1. تشغيل كود SQL المحدث (مع إصلاح linked_product)');
+        console.log('1. تشغيل كود SQL المحدث (مع JSONB للصور)');
         console.log('2. إنشاء bucket "images" في Storage');
         console.log('3. تأكد من تفعيل RLS وإضافة السياسات');
         console.log('');
-        console.log('🔧 إصدار محدث - v2.2:');
-        console.log('   ✅ إصلاح مشكلة "Cannot read properties of undefined"');
-        console.log('   ✅ تحسين البحث عن عناصر النماذج');
-        console.log('   ✅ إصلاح أسماء حقول الإعلانات المنبثقة');
-        console.log('   ✅ إضافة تسجيل مفصل للأخطاء (debugging)');
-        console.log('   ✅ معالجة أفضل للأخطاء مع رسائل واضحة');
+        console.log('🔧 إصدار محدث - v2.1:');
+        console.log('   ✅ إصلاح مشكلة نوع البيانات للصور (JSONB)');
+        console.log('   ✅ نظام فحص bucket الصور المحسن');
+        console.log('   ✅ رسائل خطأ واضحة ومفيدة مع حلول');
+        console.log('   ✅ واجهة إدارة bucket محسنة');
+        console.log('   ✅ تشخيص ذكي لمشاكل رفع الصور');
         console.log('');
-        console.log('🛠️ في حالة استمرار مشكلة الإعلانات المنبثقة:');
-        console.log('   1. شغل كود SQL الإصلاح (لإضافة linked_product)');
-        console.log('   2. تأكد من ملء العنوان والوصف والصورة');
-        console.log('   3. راقب الكونسول للمزيد من التفاصيل');
+        console.log('🛠️ في حالة مشاكل رفع الصور:');
+        console.log('   1. انقر على أيقونة الإعدادات ⚙️');
+        console.log('   2. انقر على "فحص حالة المجلد"');
+        console.log('   3. اتبع التعليمات المقترحة');
         console.log('');
         console.log('💡 نصائح:');
-        console.log('   - استخدم F12 → Console لمراقبة الأخطاء');
-        console.log('   - الصورة مطلوبة للإعلانات المنبثقة');
-        console.log('   - ربط المنتج اختياري لجميع الإعلانات');
+        console.log('   - استخدم "فحص حالة المجلد" للتشخيص');
+        console.log('   - جرب "إنشاء المجلد" للحل التلقائي');
+        console.log('   - راجع "دليل الإنشاء اليدوي" كحل أخير');
     </script>
 </body>
 </html>
