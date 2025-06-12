@@ -148,10 +148,6 @@
             z-index: -1;
         }
 
-        img {
-            loading: lazy;
-        }
-
         /* Header */
         .header {
             position: fixed;
@@ -270,10 +266,10 @@
             font-weight: 700;
         }
 
-        /* Ads Section */
+        /* Ads Section - التصميم الجديد المربع البيضاوي */
         .ads-section {
             margin-top: 60px;
-            padding: var(--space-4) 0;
+            padding: var(--space-5) 0;
             background: rgba(15, 23, 42, 0.3);
             backdrop-filter: blur(8px);
             border-bottom: 1px solid var(--glass-border);
@@ -288,7 +284,7 @@
 
         .ads-slider {
             overflow: hidden;
-            border-radius: var(--radius-xl);
+            border-radius: var(--radius-2xl);
             position: relative;
         }
 
@@ -298,48 +294,90 @@
             gap: var(--space-4);
         }
 
+        /* التصميم الجديد للإعلانات - مربع بيضاوي مع النص فوق الصورة */
         .ad-card {
-            min-width: 280px;
-            height: 80px;
+            min-width: 320px;
+            height: 140px;
             background: var(--glass);
             backdrop-filter: blur(10px);
             border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            padding: var(--space-3);
-            display: flex;
-            align-items: center;
-            gap: var(--space-3);
+            border-radius: var(--radius-2xl);
+            overflow: hidden;
             cursor: pointer;
             transition: all var(--transition-base);
+            position: relative;
+            display: flex;
+            flex-direction: column;
         }
 
         .ad-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-xl);
             border-color: var(--primary-solid);
         }
 
-        .ad-image {
-            width: 50px;
-            height: 50px;
-            border-radius: var(--radius-full);
+        .ad-card-image {
+            width: 100%;
+            height: 100%;
             object-fit: cover;
-            border: 2px solid var(--primary-solid);
-            flex-shrink: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            filter: brightness(0.7);
+            transition: all var(--transition-base);
         }
 
-        .ad-content h3 {
-            font-size: var(--font-size-sm);
-            font-weight: 600;
+        .ad-card:hover .ad-card-image {
+            filter: brightness(0.5);
+            transform: scale(1.05);
+        }
+
+        .ad-card-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.3) 100%);
+            z-index: 2;
+        }
+
+        .ad-card-content {
+            position: relative;
+            z-index: 3;
+            padding: var(--space-4);
             color: white;
-            margin-bottom: var(--space-1);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .ad-card-title {
+            font-size: var(--font-size-lg);
+            font-weight: 700;
+            margin-bottom: var(--space-2);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
             line-height: 1.2;
         }
 
-        .ad-content p {
-            font-size: var(--font-size-xs);
-            color: var(--gray-300);
+        .ad-card-description {
+            font-size: var(--font-size-sm);
+            opacity: 0.9;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
             line-height: 1.3;
+        }
+
+        /* في حالة عدم وجود صورة */
+        .ad-card-no-image {
+            background: var(--primary);
+            background: linear-gradient(135deg, var(--primary-solid) 0%, var(--secondary-solid) 100%);
+        }
+
+        .ad-card-no-image .ad-card-content {
+            background: none;
         }
 
         /* Search Section */
@@ -455,7 +493,6 @@
             height: 100%;
             object-fit: cover;
             flex-shrink: 0;
-            loading: lazy;
         }
 
         .image-indicators {
@@ -1153,7 +1190,7 @@
             opacity: 1;
         }
 
-        /* Popup Ad Styles */
+        /* Popup Ad Styles - نفس التصميم الجديد */
         .popup-ad {
             position: fixed;
             top: 50%;
@@ -1163,7 +1200,7 @@
             backdrop-filter: blur(20px);
             border: 2px solid var(--primary-solid);
             border-radius: var(--radius-2xl);
-            padding: var(--space-5);
+            padding: 0;
             max-width: 400px;
             width: 90%;
             z-index: 2001;
@@ -1171,6 +1208,7 @@
             transition: all var(--transition-slow);
             box-shadow: var(--shadow-2xl);
             display: none;
+            overflow: hidden;
         }
 
         .popup-ad.show {
@@ -1187,13 +1225,13 @@
             color: white;
             border: none;
             border-radius: var(--radius-full);
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            font-size: var(--font-size-xs);
+            font-size: var(--font-size-sm);
             transition: all var(--transition-base);
             z-index: 10;
         }
@@ -1203,35 +1241,57 @@
             transform: scale(1.1);
         }
 
-        .popup-ad-image {
+        .popup-ad-image-container {
+            position: relative;
             width: 100%;
             height: 200px;
+            overflow: hidden;
+        }
+
+        .popup-ad-image {
+            width: 100%;
+            height: 100%;
             object-fit: cover;
-            border-radius: var(--radius-xl);
-            margin-bottom: var(--space-4);
-            border: 2px solid var(--glass-border);
+            filter: brightness(0.7);
+        }
+
+        .popup-ad-image-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.3) 100%);
+            z-index: 2;
+        }
+
+        .popup-ad-image-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: white;
+            z-index: 3;
+            width: 90%;
+        }
+
+        .popup-ad-image-title {
+            font-size: var(--font-size-xl);
+            font-weight: 700;
+            margin-bottom: var(--space-2);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.7);
+        }
+
+        .popup-ad-image-description {
+            font-size: var(--font-size-base);
+            opacity: 0.9;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.7);
         }
 
         .popup-ad-content {
+            padding: var(--space-4);
             text-align: center;
-        }
-
-        .popup-ad-title {
-            font-size: var(--font-size-xl);
-            font-weight: 700;
-            background: var(--primary);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: var(--space-3);
-            line-height: 1.3;
-        }
-
-        .popup-ad-description {
-            color: var(--gray-300);
-            font-size: var(--font-size-base);
-            line-height: 1.5;
-            margin-bottom: var(--space-4);
         }
 
         .popup-ad-button {
@@ -1286,14 +1346,8 @@
             }
 
             .ad-card {
-                min-width: 240px;
-                height: 70px;
-                padding: var(--space-2);
-            }
-
-            .ad-image {
-                width: 40px;
-                height: 40px;
+                min-width: 280px;
+                height: 120px;
             }
 
             .modal-content {
@@ -1313,10 +1367,9 @@
 
             .popup-ad {
                 max-width: 350px;
-                padding: var(--space-4);
             }
 
-            .popup-ad-image {
+            .popup-ad-image-container {
                 height: 150px;
             }
 
@@ -1345,8 +1398,8 @@
             }
 
             .ad-card {
-                min-width: 200px;
-                height: 60px;
+                min-width: 240px;
+                height: 100px;
             }
 
             .sidebar {
@@ -1356,7 +1409,6 @@
 
             .popup-ad {
                 max-width: 300px;
-                padding: var(--space-3);
             }
 
             .admin-panel {
@@ -1474,10 +1526,15 @@
         <button class="popup-ad-close" onclick="closePopupAd()">
             <i class="fas fa-times"></i>
         </button>
-        <img src="" alt="" class="popup-ad-image" id="popupAdImage">
+        <div class="popup-ad-image-container" id="popupAdImageContainer">
+            <img src="" alt="" class="popup-ad-image" id="popupAdImage">
+            <div class="popup-ad-image-overlay"></div>
+            <div class="popup-ad-image-content">
+                <h3 class="popup-ad-image-title" id="popupAdTitle"></h3>
+                <p class="popup-ad-image-description" id="popupAdDescription"></p>
+            </div>
+        </div>
         <div class="popup-ad-content">
-            <h3 class="popup-ad-title" id="popupAdTitle"></h3>
-            <p class="popup-ad-description" id="popupAdDescription"></p>
             <button class="popup-ad-button" id="popupAdButton">
                 <i class="fas fa-eye"></i>
                 عرض المنتج
@@ -1587,7 +1644,6 @@
         <div class="admin-tabs">
             <div class="admin-tab active" onclick="switchAdminTab('products')">المنتجات</div>
             <div class="admin-tab" onclick="switchAdminTab('ads')">الإعلانات</div>
-            <div class="admin-tab" onclick="switchAdminTab('popupAds')">الإعلانات المنبثقة</div>
         </div>
 
         <!-- Products Form -->
@@ -1650,8 +1706,9 @@
                     <textarea class="form-textarea" id="adDescription" rows="2" required></textarea>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">صورة الإعلان</label>
-                    <input type="file" class="file-input" id="adImage" accept="image/*">
+                    <label class="form-label">صورة الإعلان *</label>
+                    <input type="file" class="file-input" id="adImage" accept="image/*" required>
+                    <small style="color: var(--gray-400); margin-top: var(--space-1); display: block;">الصورة مطلوبة للإعلان</small>
                 </div>
                 <div class="form-group">
                     <label class="form-label">المنتج المربوط (اختياري)</label>
@@ -1662,34 +1719,6 @@
                 <button type="submit" class="btn btn-primary w-full">
                     <i class="fas fa-plus"></i>
                     إضافة الإعلان
-                </button>
-            </form>
-        </div>
-
-        <!-- Popup Ads Form -->
-        <div class="admin-form" id="popupAdsForm">
-            <form id="addPopupAdForm" onsubmit="handleAddPopupAd(event)">
-                <div class="form-group">
-                    <label class="form-label">عنوان الإعلان المنبثق *</label>
-                    <input type="text" class="form-input" id="popupAdTitle" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">الوصف *</label>
-                    <textarea class="form-textarea" id="popupAdDescription" rows="3" required></textarea>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">صورة الإعلان *</label>
-                    <input type="file" class="file-input" id="popupAdImage" accept="image/*" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">المنتج المربوط (اختياري)</label>
-                    <select class="form-input" id="popupAdLinkedProduct">
-                        <option value="">لا يوجد</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-primary w-full">
-                    <i class="fas fa-plus"></i>
-                    إضافة الإعلان المنبثق
                 </button>
             </form>
         </div>
@@ -1905,8 +1934,7 @@
 
         // متغيرات عامة
         let products = [];
-        let ads = [];
-        let popupAds = [];
+        let ads = []; // إعلانات موحدة - تظهر في الشريط العلوي وكإعلانات منبثقة
         let cart = JSON.parse(localStorage.getItem('alhajami_cart')) || [];
         let favorites = JSON.parse(localStorage.getItem('alhajami_favorites')) || [];
         let currentFilter = 'all';
@@ -1973,7 +2001,6 @@
         // دوال رفع الصور
         async function uploadImages(files, folder = 'products') {
             try {
-                // التحقق من وجود bucket الصور أولاً
                 await checkAndCreateImagesBucket();
 
                 const uploadPromises = Array.from(files).map(async (file) => {
@@ -2005,7 +2032,6 @@
             } catch (error) {
                 console.error('خطأ في رفع الصور:', error);
                 
-                // إذا كان الخطأ متعلق بـ bucket
                 if (error.message.includes('Bucket') || error.statusCode === 404) {
                     throw new Error('مجلد الصور غير موجود. انقر على أيقونة الإعدادات ⚙️ لإنشاؤه.');
                 }
@@ -2017,7 +2043,6 @@
         // التحقق من bucket وإنشاؤه إذا لم يكن موجوداً
         async function checkAndCreateImagesBucket() {
             try {
-                // محاولة رفع ملف تجريبي صغير للتحقق من وجود bucket
                 const testFile = new Blob(['test'], { type: 'text/plain' });
                 const testFileName = `test_${Date.now()}.txt`;
                 
@@ -2032,7 +2057,6 @@
                     throw error;
                 }
 
-                // حذف الملف التجريبي
                 await supabase.storage
                     .from('images')
                     .remove([testFileName]);
@@ -2051,7 +2075,6 @@
             try {
                 console.log('🔍 التحقق من مجلد الصور...');
                 
-                // محاولة أكثر دقة للتحقق من bucket
                 const { data, error } = await supabase.storage
                     .from('images')
                     .list('', { limit: 1 });
@@ -2107,10 +2130,8 @@
         // دوال قاعدة البيانات
         async function createTablesIfNotExist() {
             try {
-                // التحقق من وجود الجداول وإنشاؤها إذا لم تكن موجودة
                 console.log('🔧 التحقق من إنشاء الجداول...');
                 
-                // محاولة الاستعلام عن المنتجات للتحقق من وجود الجدول
                 const { data: productsTest } = await supabase
                     .from('products')
                     .select('id')
@@ -2118,7 +2139,7 @@
 
                 console.log('✅ جدول المنتجات موجود');
 
-                // التحقق من جدول الإعلانات
+                // التحقق من جدول الإعلانات الموحد
                 const { data: adsTest } = await supabase
                     .from('ads')
                     .select('id')
@@ -2126,15 +2147,6 @@
 
                 console.log('✅ جدول الإعلانات موجود');
 
-                // التحقق من جدول الإعلانات المنبثقة
-                const { data: popupAdsTest } = await supabase
-                    .from('popup_ads')
-                    .select('id')
-                    .limit(1);
-
-                console.log('✅ جدول الإعلانات المنبثقة موجود');
-
-                // التحقق من جدول الرسائل
                 const { data: messagesTest } = await supabase
                     .from('messages')
                     .select('id')
@@ -2145,8 +2157,6 @@
             } catch (error) {
                 console.error('❌ خطأ في التحقق من الجداول:', error);
                 showNotification('تحذير: قد تحتاج إلى إنشاء الجداول في قاعدة البيانات', 'error');
-                
-                // عرض رسالة للمستخدم
                 showSetupInstructions();
             }
         }
@@ -2187,18 +2197,8 @@ CREATE TABLE IF NOT EXISTS products (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- إنشاء جدول الإعلانات
+-- إنشاء جدول الإعلانات الموحد
 CREATE TABLE IF NOT EXISTS ads (
-  id SERIAL PRIMARY KEY,
-  title TEXT NOT NULL,
-  description TEXT NOT NULL,
-  image TEXT,
-  linked_product INTEGER,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- إنشاء جدول الإعلانات المنبثقة
-CREATE TABLE IF NOT EXISTS popup_ads (
   id SERIAL PRIMARY KEY,
   title TEXT NOT NULL,
   description TEXT NOT NULL,
@@ -2220,13 +2220,11 @@ CREATE TABLE IF NOT EXISTS messages (
 -- تفعيل Row Level Security
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ads ENABLE ROW LEVEL SECURITY;
-ALTER TABLE popup_ads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 
 -- سياسات الوصول العام
 CREATE POLICY "Allow all operations" ON products USING (true);
 CREATE POLICY "Allow all operations" ON ads USING (true);
-CREATE POLICY "Allow all operations" ON popup_ads USING (true);
 CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
                         
                         <div style="margin-top: var(--space-4);">
@@ -2252,26 +2250,21 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
             try {
                 console.log('🚀 بدء تهيئة التطبيق...');
                 
-                // التحقق من الاتصال بقاعدة البيانات
                 await createTablesIfNotExist();
                 
-                // التحقق من bucket الصور مع محاولة الإنشاء
                 try {
                     await ensureImagesBucketExists();
                     console.log('✅ مجلد الصور جاهز');
                 } catch (error) {
                     console.warn('⚠️ مشكلة في مجلد الصور:', error.message);
-                    // عرض إشعار للمستخدم مع إرشادات واضحة
                     setTimeout(() => {
                         showNotification('⚠️ مجلد الصور غير متاح - انقر على أيقونة الإعدادات ⚙️ → "فحص حالة المجلد"', 'error');
                     }, 2000);
                 }
                 
-                // تحميل البيانات
                 await Promise.allSettled([
                     loadProducts(),
-                    loadAds(),
-                    loadPopupAds()
+                    loadAds()
                 ]);
                 
                 updateCartCount();
@@ -2285,7 +2278,7 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
                 
                 // Show popup ad after 5 seconds if available
                 setTimeout(() => {
-                    if (popupAds.length > 0) {
+                    if (ads.length > 0) {
                         showRandomPopupAd();
                     }
                 }, 5000);
@@ -2339,7 +2332,7 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
             }
         }
 
-        // تحميل الإعلانات
+        // تحميل الإعلانات الموحدة
         async function loadAds() {
             try {
                 const { data, error } = await supabase
@@ -2368,32 +2361,6 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
             }
         }
 
-        // تحميل الإعلانات المنبثقة
-        async function loadPopupAds() {
-            try {
-                const { data, error } = await supabase
-                    .from('popup_ads')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-                
-                if (error) {
-                    if (error.code === '42P01') {
-                        console.log('⚠️ جدول الإعلانات المنبثقة غير موجود - سيتم تخطي تحميل الإعلانات المنبثقة');
-                        popupAds = [];
-                        return;
-                    }
-                    throw error;
-                }
-                
-                popupAds = data || [];
-                console.log(`✅ تم تحميل ${popupAds.length} إعلان منبثق`);
-                
-            } catch (error) {
-                console.error('خطأ في تحميل الإعلانات المنبثقة:', error);
-                popupAds = [];
-            }
-        }
-
         // إضافة منتج جديد
         async function handleAddProduct(event) {
             event.preventDefault();
@@ -2417,7 +2384,6 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
                     return;
                 }
                 
-                // رفع الصور
                 let imageUrls;
                 try {
                     imageUrls = await uploadImages(imageFiles, 'products');
@@ -2426,7 +2392,6 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
                     console.error('خطأ في رفع صور المنتج:', uploadError);
                     hideLoadingSpinner();
                     
-                    // عرض نافذة مساعدة إذا كانت المشكلة في bucket
                     if (uploadError.message.includes('مجلد الصور') || uploadError.message.includes('Bucket')) {
                         showImageUploadErrorModal();
                     } else {
@@ -2435,7 +2400,6 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
                     return;
                 }
                 
-                // إضافة المنتج إلى قاعدة البيانات مع تحويل المصفوفة إلى JSON
                 const { data, error } = await supabase
                     .from('products')
                     .insert([{
@@ -2446,18 +2410,16 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
                         category,
                         badge: badge || null,
                         rating,
-                        images: JSON.stringify(imageUrls), // تحويل إلى JSON string
+                        images: JSON.stringify(imageUrls),
                         reviews: 0
                     }])
                     .select();
                 
                 if (error) throw error;
                 
-                // إعادة تحميل المنتجات
                 await loadProducts(currentFilter);
                 loadProductsIntoSelects();
                 
-                // إعادة تعيين النموذج
                 document.getElementById('addProductForm').reset();
                 
                 showNotification('✅ تم إضافة المنتج بنجاح!');
@@ -2466,6 +2428,62 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
             } catch (error) {
                 console.error('خطأ في إضافة المنتج:', error);
                 showNotification('❌ ' + error.message, 'error');
+                hideLoadingSpinner();
+            }
+        }
+
+        // إضافة إعلان جديد (موحد - يظهر في الشريط والمنبثق)
+        async function handleAddAd(event) {
+            event.preventDefault();
+            
+            try {
+                showLoadingSpinner();
+                
+                const title = document.getElementById('adTitle').value.trim();
+                const description = document.getElementById('adDescription').value.trim();
+                const linkedProduct = document.getElementById('adLinkedProduct').value || null;
+                const imageFile = document.getElementById('adImage').files[0];
+                
+                if (!title || !description || !imageFile) {
+                    showNotification('يرجى ملء جميع الحقول المطلوبة', 'error');
+                    hideLoadingSpinner();
+                    return;
+                }
+                
+                let imageUrl;
+                try {
+                    const imageUrls = await uploadImages([imageFile], 'ads');
+                    imageUrl = imageUrls[0];
+                    console.log('✅ تم رفع صورة الإعلان:', imageUrl);
+                } catch (uploadError) {
+                    console.error('خطأ في رفع صورة الإعلان:', uploadError);
+                    hideLoadingSpinner();
+                    showNotification('❌ فشل في رفع صورة الإعلان: ' + uploadError.message, 'error');
+                    return;
+                }
+                
+                const { data, error } = await supabase
+                    .from('ads')
+                    .insert([{
+                        title,
+                        description,
+                        image: imageUrl,
+                        linked_product: linkedProduct
+                    }])
+                    .select();
+                
+                if (error) throw error;
+                
+                await loadAds();
+                
+                document.getElementById('addAdForm').reset();
+                
+                showNotification('✅ تم إضافة الإعلان بنجاح!');
+                hideLoadingSpinner();
+                
+            } catch (error) {
+                console.error('خطأ في إضافة الإعلان:', error);
+                showNotification('❌ خطأ في إضافة الإعلان: ' + error.message, 'error');
                 hideLoadingSpinner();
             }
         }
@@ -2526,219 +2544,37 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
             document.body.appendChild(modal);
         }
 
-        // إضافة إعلان جديد
-        async function handleAddAd(event) {
-            event.preventDefault();
-            
-            try {
-                showLoadingSpinner();
-                
-                const title = document.getElementById('adTitle').value.trim();
-                const description = document.getElementById('adDescription').value.trim();
-                const linkedProduct = document.getElementById('adLinkedProduct').value || null;
-                const imageFile = document.getElementById('adImage').files[0];
-                
-                if (!title || !description) {
-                    showNotification('يرجى ملء جميع الحقول المطلوبة', 'error');
-                    hideLoadingSpinner();
-                    return;
-                }
-                
-                let imageUrl = null;
-                
-                // رفع الصورة إذا تم اختيارها
-                if (imageFile) {
-                    try {
-                        const imageUrls = await uploadImages([imageFile], 'ads');
-                        imageUrl = imageUrls[0];
-                        console.log('✅ تم رفع صورة الإعلان:', imageUrl);
-                    } catch (uploadError) {
-                        console.error('خطأ في رفع صورة الإعلان:', uploadError);
-                        showNotification('⚠️ فشل رفع الصورة - سيتم إضافة الإعلان بدون صورة', 'error');
-                        // يمكن المتابعة بدون صورة للإعلانات العادية
-                    }
-                }
-                
-                // إنشاء كائن البيانات بدون linked_product إذا لم يكن العمود موجوداً
-                const adData = {
-                    title,
-                    description,
-                    image: imageUrl
-                };
-                
-                // إضافة linked_product فقط إذا تم تحديد منتج
-                if (linkedProduct) {
-                    adData.linked_product = linkedProduct;
-                }
-                
-                // إضافة الإعلان إلى قاعدة البيانات
-                const { data, error } = await supabase
-                    .from('ads')
-                    .insert([adData])
-                    .select();
-                
-                if (error) {
-                    // إذا كان الخطأ متعلق بـ linked_product، جرب بدونه
-                    if (error.message.includes('linked_product')) {
-                        console.warn('عمود linked_product غير موجود، إضافة الإعلان بدونه...');
-                        const { data: retryData, error: retryError } = await supabase
-                            .from('ads')
-                            .insert([{
-                                title,
-                                description,
-                                image: imageUrl
-                            }])
-                            .select();
-                        
-                        if (retryError) throw retryError;
-                        
-                        showNotification('✅ تم إضافة الإعلان بنجاح! (ملاحظة: ربط المنتج غير متاح)', 'warning');
-                    } else {
-                        throw error;
-                    }
-                } else {
-                    showNotification('✅ تم إضافة الإعلان بنجاح!');
-                }
-                
-                // إعادة تحميل الإعلانات
-                await loadAds();
-                
-                // إعادة تعيين النموذج
-                document.getElementById('addAdForm').reset();
-                
-                hideLoadingSpinner();
-                
-            } catch (error) {
-                console.error('خطأ في إضافة الإعلان:', error);
-                showNotification('❌ خطأ في إضافة الإعلان: ' + error.message, 'error');
-                hideLoadingSpinner();
-            }
-        }
-
-        // إضافة إعلان منبثق جديد
-        async function handleAddPopupAd(event) {
-            event.preventDefault();
-            
-            try {
-                showLoadingSpinner();
-                
-                // التحقق من وجود العناصر قبل قراءة قيمها
-                const titleElement = document.getElementById('popupAdTitle');
-                const descriptionElement = document.getElementById('popupAdDescription');
-                const linkedProductElement = document.getElementById('popupAdLinkedProduct');
-                const imageFileElement = document.getElementById('popupAdImage');
-                
-                if (!titleElement || !descriptionElement || !linkedProductElement || !imageFileElement) {
-                    showNotification('خطأ في العثور على حقول النموذج', 'error');
-                    hideLoadingSpinner();
-                    return;
-                }
-                
-                const title = titleElement.value.trim();
-                const description = descriptionElement.value.trim();
-                const linkedProduct = linkedProductElement.value || null;
-                const imageFile = imageFileElement.files[0];
-                
-                if (!title || !description || !imageFile) {
-                    showNotification('يرجى ملء جميع الحقول المطلوبة', 'error');
-                    hideLoadingSpinner();
-                    return;
-                }
-                
-                // رفع الصورة (مطلوبة للإعلانات المنبثقة)
-                let imageUrl;
-                try {
-                    const imageUrls = await uploadImages([imageFile], 'popup_ads');
-                    imageUrl = imageUrls[0];
-                    console.log('✅ تم رفع صورة الإعلان المنبثق:', imageUrl);
-                } catch (uploadError) {
-                    console.error('خطأ في رفع صورة الإعلان المنبثق:', uploadError);
-                    hideLoadingSpinner();
-                    
-                    // عرض نافذة مساعدة إذا كانت المشكلة في bucket
-                    if (uploadError.message.includes('مجلد الصور') || uploadError.message.includes('Bucket')) {
-                        showImageUploadErrorModal();
-                    } else {
-                        showNotification('❌ فشل في رفع صورة الإعلان: ' + uploadError.message, 'error');
-                    }
-                    return;
-                }
-                
-                // إنشاء كائن البيانات
-                const popupAdData = {
-                    title,
-                    description,
-                    image: imageUrl
-                };
-                
-                // إضافة linked_product فقط إذا تم تحديد منتج
-                if (linkedProduct) {
-                    popupAdData.linked_product = linkedProduct;
-                }
-                
-                // إضافة الإعلان المنبثق إلى قاعدة البيانات
-                const { data, error } = await supabase
-                    .from('popup_ads')
-                    .insert([popupAdData])
-                    .select();
-                
-                if (error) {
-                    // إذا كان الخطأ متعلق بـ linked_product، جرب بدونه
-                    if (error.message.includes('linked_product')) {
-                        console.warn('عمود linked_product غير موجود في popup_ads، إضافة الإعلان بدونه...');
-                        const { data: retryData, error: retryError } = await supabase
-                            .from('popup_ads')
-                            .insert([{
-                                title,
-                                description,
-                                image: imageUrl
-                            }])
-                            .select();
-                        
-                        if (retryError) throw retryError;
-                        
-                        showNotification('✅ تم إضافة الإعلان المنبثق بنجاح! (ملاحظة: ربط المنتج غير متاح)');
-                    } else {
-                        throw error;
-                    }
-                } else {
-                    showNotification('✅ تم إضافة الإعلان المنبثق بنجاح!');
-                }
-                
-                // إعادة تحميل الإعلانات المنبثقة
-                await loadPopupAds();
-                
-                // إعادة تعيين النموذج
-                document.getElementById('addPopupAdForm').reset();
-                
-                hideLoadingSpinner();
-                
-            } catch (error) {
-                console.error('خطأ في إضافة الإعلان المنبثق:', error);
-                showNotification('❌ ' + error.message, 'error');
-                hideLoadingSpinner();
-            }
-        }
-
         // تحميل المنتجات في قوائم الاختيار
         function loadProductsIntoSelects() {
-            const selects = ['adLinkedProduct', 'popupAdLinkedProduct'];
+            console.log('📋 تحميل المنتجات في قوائم الاختيار...');
             
-            selects.forEach(selectId => {
+            const selectIds = ['adLinkedProduct'];
+            
+            selectIds.forEach(selectId => {
                 const select = document.getElementById(selectId);
-                if (select) {
-                    // Clear existing options except first one
+                if (!select) {
+                    console.warn(`⚠️ العنصر ${selectId} غير موجود`);
+                    return;
+                }
+                
+                try {
                     while (select.children.length > 1) {
                         select.removeChild(select.lastChild);
                     }
                     
-                    // Add products
                     products.forEach(product => {
-                        const option = document.createElement('option');
-                        option.value = product.id;
-                        option.textContent = product.name;
-                        select.appendChild(option);
+                        if (product && product.id && product.name) {
+                            const option = document.createElement('option');
+                            option.value = product.id;
+                            option.textContent = product.name;
+                            select.appendChild(option);
+                        }
                     });
+                    
+                    console.log(`✅ تم تحميل ${products.length} منتج في ${selectId}`);
+                    
+                } catch (error) {
+                    console.error(`❌ خطأ في تحميل المنتجات في ${selectId}:`, error);
                 }
             });
         }
@@ -2755,13 +2591,11 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
         }
 
         function switchAdminTab(tabName) {
-            // Update active tab
             document.querySelectorAll('.admin-tab').forEach(tab => {
                 tab.classList.remove('active');
             });
             event.target.classList.add('active');
             
-            // Update active form
             document.querySelectorAll('.admin-form').forEach(form => {
                 form.classList.remove('active');
             });
@@ -2777,7 +2611,6 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
                 
                 console.log('📁 محاولة إنشاء/التحقق من bucket الصور...');
                 
-                // أولاً، محاولة التحقق من وجود bucket عبر محاولة الوصول إليه
                 try {
                     const { data, error } = await supabase.storage
                         .from('images')
@@ -2792,7 +2625,6 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
                     console.log('bucket غير موجود، المتابعة للإنشاء...');
                 }
 
-                // محاولة إنشاء bucket
                 const { data, error } = await supabase.storage
                     .createBucket('images', {
                         public: true,
@@ -2817,8 +2649,6 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
             } catch (error) {
                 console.error('خطأ في إنشاء bucket:', error);
                 hideLoadingSpinner();
-                
-                // عرض تعليمات الإنشاء اليدوي
                 showManualBucketInstructions();
             }
         }
@@ -2830,7 +2660,6 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
                 
                 console.log('🔍 فحص حالة bucket الصور...');
                 
-                // محاولة الوصول إلى bucket
                 const { data, error } = await supabase.storage
                     .from('images')
                     .list('', { limit: 1 });
@@ -2913,6 +2742,7 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
             `;
             document.body.appendChild(modal);
         }
+
         function showManualBucketInstructions() {
             showNotification('⚠️ فشل الإنشاء التلقائي - راجع التعليمات', 'error');
             
@@ -2985,13 +2815,13 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
             document.body.appendChild(modal);
         }
 
-        // عرض إعلان منبثق عشوائي
+        // عرض إعلان منبثق عشوائي من نفس الإعلانات
         function showRandomPopupAd() {
-            if (popupAds.length === 0) return;
+            if (ads.length === 0) return;
             
             // اختيار إعلان عشوائي لم يتم عرضه اليوم
             const today = new Date().toDateString();
-            const availableAds = popupAds.filter(ad => 
+            const availableAds = ads.filter(ad => 
                 !popupAdShown[ad.id] || popupAdShown[ad.id] !== today
             );
             
@@ -3005,7 +2835,7 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
             localStorage.setItem('alhajami_popup_shown', JSON.stringify(popupAdShown));
         }
 
-        // عرض الإعلان المنبثق
+        // عرض الإعلان المنبثق بالتصميم الجديد
         function showPopupAd(ad) {
             const popup = document.getElementById('popupAd');
             const overlay = document.getElementById('popupAdOverlay');
@@ -3014,6 +2844,7 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
             const description = document.getElementById('popupAdDescription');
             const button = document.getElementById('popupAdButton');
             
+            // إعداد الصورة والمحتوى
             image.src = ad.image || 'https://via.placeholder.com/400x200?text=إعلان';
             image.alt = ad.title;
             title.textContent = ad.title;
@@ -3094,7 +2925,6 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
 
         // إنشاء بطاقة المنتج
         function createProductCard(product) {
-            // التعامل مع الصور سواءً كانت string JSON أو array
             let images = [];
             if (typeof product.images === 'string') {
                 try {
@@ -3236,44 +3066,48 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
             return stars;
         }
 
-        // عرض الإعلانات
+        // عرض الإعلانات الموحدة بالتصميم الجديد
         function displayAds() {
             const wrapper = document.getElementById('adsWrapper');
             
             if (ads.length === 0) {
+                // إعلانات افتراضية بالتصميم الجديد
                 wrapper.innerHTML = `
-                    <div class="ad-card">
-                        <div class="ad-content">
-                            <h3>🔥 مرحباً بكم في محلات الحجامي</h3>
-                            <p>أجود أنواع الشالات والطرحات والسجادات التركية</p>
+                    <div class="ad-card ad-card-no-image">
+                        <div class="ad-card-content">
+                            <h3 class="ad-card-title">🔥 مرحباً بكم في محلات الحجامي</h3>
+                            <p class="ad-card-description">أجود أنواع الشالات والطرحات والسجادات التركية</p>
                         </div>
                     </div>
-                    <div class="ad-card">
-                        <div class="ad-content">
-                            <h3>✨ جودة عالية بأسعار تنافسية</h3>
-                            <p>خبرة أكثر من 15 سنة في مجال تجارة الشالات</p>
+                    <div class="ad-card ad-card-no-image">
+                        <div class="ad-card-content">
+                            <h3 class="ad-card-title">✨ جودة عالية بأسعار تنافسية</h3>
+                            <p class="ad-card-description">خبرة أكثر من 15 سنة في مجال تجارة الشالات</p>
                         </div>
                     </div>
-                    <div class="ad-card">
-                        <div class="ad-content">
-                            <h3>🚚 توصيل مجاني</h3>
-                            <p>لجميع أنحاء العراق عند الطلب أكثر من 100,000 د.ع</p>
+                    <div class="ad-card ad-card-no-image">
+                        <div class="ad-card-content">
+                            <h3 class="ad-card-title">🚚 توصيل مجاني</h3>
+                            <p class="ad-card-description">لجميع أنحاء العراق عند الطلب أكثر من 100,000 د.ع</p>
                         </div>
                     </div>
                 `;
                 return;
             }
             
+            // تكرار الإعلانات للحركة المستمرة
             const repeatedAds = [...ads, ...ads, ...ads];
             
             wrapper.innerHTML = repeatedAds.map(ad => `
                 <div class="ad-card" onclick="${ad.linked_product ? `showLinkedProduct('${ad.linked_product}')` : ''}" 
                      style="cursor: ${ad.linked_product ? 'pointer' : 'default'};">
-                    ${ad.image ? `<img src="${ad.image}" alt="${ad.title}" class="ad-image" loading="lazy">` : 
-                                 `<div class="ad-image" style="background: var(--primary); display: flex; align-items: center; justify-content: center; color: white; font-size: var(--font-size-lg); font-weight: bold;">${ad.title.charAt(0)}</div>`}
-                    <div class="ad-content">
-                        <h3>${ad.title}</h3>
-                        <p>${ad.description}</p>
+                    ${ad.image ? `
+                        <img src="${ad.image}" alt="${ad.title}" class="ad-card-image" loading="lazy">
+                        <div class="ad-card-overlay"></div>
+                    ` : ''}
+                    <div class="ad-card-content ${!ad.image ? 'ad-card-no-image' : ''}">
+                        <h3 class="ad-card-title">${ad.title}</h3>
+                        <p class="ad-card-description">${ad.description}</p>
                     </div>
                 </div>
             `).join('');
@@ -3437,7 +3271,6 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
             
             currentMessageProductId = productId;
             
-            // التعامل مع الصور JSONB
             let images = [];
             if (typeof product.images === 'string') {
                 try {
@@ -3636,7 +3469,6 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
             container.innerHTML = cart.map(item => {
                 total += item.price * item.quantity;
                 
-                // التعامل مع الصور JSONB في السلة
                 let images = [];
                 if (typeof item.images === 'string') {
                     try {
@@ -3754,7 +3586,6 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
                 message += `   📦 الكمية: ${item.quantity}\n`;
                 message += `   💵 المجموع: ${(item.price * item.quantity).toLocaleString()} د.ع\n`;
                 
-                // التعامل مع الصور JSONB في رسالة الطلب
                 let images = [];
                 if (typeof item.images === 'string') {
                     try {
@@ -3832,7 +3663,6 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
             
             currentProductId = productId;
             
-            // التعامل مع الصور JSONB
             let images = [];
             if (typeof product.images === 'string') {
                 try {
@@ -4051,9 +3881,6 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
             lastTouchEnd = now;
         }, false);
 
-        // إزالة Service Worker لتجنب الأخطاء
-        // يمكن إضافته لاحقاً عند الحاجة
-
         // Show popup ads periodically
         setInterval(() => {
             if (Math.random() < 0.3) { // 30% chance every 2 minutes
@@ -4061,34 +3888,24 @@ CREATE POLICY "Allow all operations" ON messages USING (true);</textarea>
             }
         }, 120000); // Every 2 minutes
 
-        console.log('🚀 تطبيق محلات الحجامي - نسخة Supabase جاهز للعمل!');
+        console.log('🚀 تطبيق محلات الحجامي - الإصدار الموحد جاهز للعمل!');
         console.log('📱 الروابط الاجتماعية:');
         console.log('📘 فيسبوك:', socialLinks.facebook);
         console.log('📸 إنستغرام:', socialLinks.instagram);
         console.log('🗄️ قاعدة البيانات: Supabase متصلة بنجاح');
         
         console.log('');
+        console.log('🆕 التحديثات الجديدة:');
+        console.log('   ✅ نظام إعلانات موحد');
+        console.log('   ✅ تصميم مربع بيضاوي للإعلانات');
+        console.log('   ✅ النص فوق الصورة في الإعلانات');
+        console.log('   ✅ نفس الإعلانات تظهر في الشريط والمنبثق');
+        console.log('   ✅ تحسين الأداء والواجهة');
+        console.log('');
         console.log('📋 تعليمات الإعداد:');
-        console.log('1. تشغيل كود SQL المحدث (مع JSONB للصور)');
+        console.log('1. تشغيل كود SQL المحدث (إعلانات موحدة)');
         console.log('2. إنشاء bucket "images" في Storage');
         console.log('3. تأكد من تفعيل RLS وإضافة السياسات');
-        console.log('');
-        console.log('🔧 إصدار محدث - v2.1:');
-        console.log('   ✅ إصلاح مشكلة نوع البيانات للصور (JSONB)');
-        console.log('   ✅ نظام فحص bucket الصور المحسن');
-        console.log('   ✅ رسائل خطأ واضحة ومفيدة مع حلول');
-        console.log('   ✅ واجهة إدارة bucket محسنة');
-        console.log('   ✅ تشخيص ذكي لمشاكل رفع الصور');
-        console.log('');
-        console.log('🛠️ في حالة مشاكل رفع الصور:');
-        console.log('   1. انقر على أيقونة الإعدادات ⚙️');
-        console.log('   2. انقر على "فحص حالة المجلد"');
-        console.log('   3. اتبع التعليمات المقترحة');
-        console.log('');
-        console.log('💡 نصائح:');
-        console.log('   - استخدم "فحص حالة المجلد" للتشخيص');
-        console.log('   - جرب "إنشاء المجلد" للحل التلقائي');
-        console.log('   - راجع "دليل الإنشاء اليدوي" كحل أخير');
     </script>
 </body>
 </html>
